@@ -5,16 +5,23 @@ import com.miro.core.exceptions.WidgetNotFoundException;
 import com.miro.services.stringSerializer.JsonSerializer;
 import com.miro.services.widgetManager.WidgetServiceImpl;
 import org.apache.commons.lang3.Validate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.UUID;
 
 @Controller
 public class WidgetController {
+
+    private final Logger logger = LogManager.getLogger(WidgetController.class);
 
     private final WidgetServiceImpl widgetService;
     private final JsonSerializer jsonSerializer;
@@ -29,40 +36,66 @@ public class WidgetController {
 
     @RequestMapping(value = "/widget/create", method = RequestMethod.PUT)
     @ResponseBody
-    String CreateWidget(HttpServletRequest request) {
-        String widthText = request.getParameter("width");
-        String heightText = request.getParameter("height");
-        String xText = request.getParameter("x");
-        String yText = request.getParameter("y");
-        String zIndexText = request.getParameter("zIndex");
+    public ResponseEntity<String> CreateWidget(HttpServletRequest request) {
+        logger.debug(request.toString());
+        try {
+            String widthText = request.getParameter("width");
+            String heightText = request.getParameter("height");
+            String xText = request.getParameter("x");
+            String yText = request.getParameter("y");
+            String zIndexText = request.getParameter("zIndex");
 
-        double width = Double.parseDouble(widthText);
-        double height = Double.parseDouble(heightText);
-        double x = Double.parseDouble(xText);
-        double y = Double.parseDouble(yText);
+            double width;
+            double height;
+            double x;
+            double y;
+            Integer zIndex = null;
 
-        Integer zIndex = null;
-        if(zIndexText != null){
-            zIndex = Integer.parseInt(zIndexText);
+            try {
+                width = Double.parseDouble(widthText);
+                height = Double.parseDouble(heightText);
+                x = Double.parseDouble(xText);
+                y = Double.parseDouble(yText);
+
+                if(zIndexText != null){
+                    zIndex = Integer.parseInt(zIndexText);
+                }
+            }
+            catch (NullPointerException | NumberFormatException ex){
+                logger.info("invalid parameters");
+                return new  ResponseEntity<>(ex.toString(), HttpStatus.BAD_REQUEST);
+            }
+
+            var widget =  widgetService.createWidget(x,y,width,height,zIndex);
+            return ResponseEntity.ok(jsonSerializer.serialize(widget));
         }
-
-        Widget widget =  widgetService.createWidget(x,y,width,height,zIndex);
-        return jsonSerializer.serialize(widget);
+        catch (Exception ex){
+            logger.error(ex);
+            return new ResponseEntity<>(ex.toString(),HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @RequestMapping(value = "/widget/get", method = RequestMethod.GET)
     @ResponseBody
-    String GetWidget(HttpServletRequest request) {
-        String guidText = request.getParameter("guid");
+    public ResponseEntity<String>  GetWidget(HttpServletRequest request) {
+        logger.debug(request.toString());
 
-        UUID guid = UUID.fromString(guidText);
+        String guidText = request.getParameter("guid");
+        UUID guid;
+        try {
+            guid = UUID.fromString(guidText);
+        }
+        catch(IllegalArgumentException ex){
+            logger.info("invalid parameters");
+            return new  ResponseEntity<>(ex.toString(), HttpStatus.BAD_REQUEST);
+        }
         Widget widget = null;
         try {
             widget = widgetService.getWidget(guid);
         } catch (WidgetNotFoundException e) {
-            e.printStackTrace();
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
-        return jsonSerializer.serialize(widget);
+        return ResponseEntity.ok(jsonSerializer.serialize(widget));
     }
 
 }
