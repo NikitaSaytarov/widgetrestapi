@@ -170,6 +170,9 @@ public class WidgetController {
             widgetService.updateWidget(guid, widgetLayoutInfo);
             return new ResponseEntity(HttpStatus.OK);
         }
+        catch (WidgetNotFoundException e) {
+            return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
+        }
         catch (IllegalArgumentException e){
             LOGGER.info("Request(/widget/update) wrong parameters: ", e.getMessage());
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);

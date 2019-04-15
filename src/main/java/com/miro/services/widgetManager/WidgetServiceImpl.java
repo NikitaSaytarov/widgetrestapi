@@ -106,7 +106,7 @@ public final class WidgetServiceImpl implements WidgetService {
         Validate.notNull(widgetGuid, "widgetGuid can't be null");
         Validate.notNull(widgetLayoutInfo, "widgetLayoutInfo can't be null");
 
-        var widgetAvailability = widgets.stream().filter(w -> w.getGuid() == widgetGuid).findFirst();
+        var widgetAvailability = widgets.stream().filter(w -> w.getGuid().compareTo(widgetGuid) == 0).findFirst();
         if(widgetAvailability.isPresent()){
             var widget = widgetAvailability.get();
             var isZIndexWillChange = widgetLayoutInfo.getzIndex() != null;
