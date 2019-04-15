@@ -10,10 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.UUID;
@@ -37,40 +34,71 @@ public class WidgetController {
     @RequestMapping(value = "/widget/create", method = RequestMethod.PUT)
     @ResponseBody
     public ResponseEntity<String> CreateWidget(HttpServletRequest request) {
+
+        String widthText = request.getParameter("width");
+        String heightText = request.getParameter("height");
+        String xText = request.getParameter("x");
+        String yText = request.getParameter("y");
+        String zIndexText = request.getParameter("zIndex");
+
+        double width;
+        double height;
+        double x;
+        double y;
+        Integer zIndex = null;
+
+        if (widthText == null || widthText.isEmpty()) {
+            return new  ResponseEntity<>("The 'width' parameter must not be null or empty", HttpStatus.BAD_REQUEST);
+        }
+
+        if (heightText == null || heightText.isEmpty()) {
+            return new  ResponseEntity<>("The 'height' parameter must not be null or empty", HttpStatus.BAD_REQUEST);
+        }
+
+        if (xText == null || xText.isEmpty()) {
+            return new  ResponseEntity<>("The 'x' parameter must not be null or empty", HttpStatus.BAD_REQUEST);
+        }
+
+        if (yText == null || yText.isEmpty()) {
+            return new  ResponseEntity<>("The 'y' parameter must not be null or empty", HttpStatus.BAD_REQUEST);
+        }
+
         try {
-            String widthText = request.getParameter("width");
-            String heightText = request.getParameter("height");
-            String xText = request.getParameter("x");
-            String yText = request.getParameter("y");
-            String zIndexText = request.getParameter("zIndex");
+            width = Double.parseDouble(widthText);            }
+        catch (NumberFormatException ex){
+            return new  ResponseEntity<>("The 'width' parameter has wrong format", HttpStatus.BAD_REQUEST);
+        }
+        try {
+            height = Double.parseDouble(heightText);            }
+        catch (NumberFormatException ex){
+            return new  ResponseEntity<>("The 'height' parameter has wrong format", HttpStatus.BAD_REQUEST);
+        }
+        try {
+            x = Double.parseDouble(xText);      }
+        catch (NumberFormatException ex){
+            return new  ResponseEntity<>("The 'x' parameter has wrong format", HttpStatus.BAD_REQUEST);
+        }
+        try {
+            y = Double.parseDouble(yText);            }
+        catch (NumberFormatException ex){
+            return new  ResponseEntity<>("The 'y' parameter has wrong format", HttpStatus.BAD_REQUEST);
+        }
 
-            double width;
-            double height;
-            double x;
-            double y;
-            Integer zIndex = null;
-
+        if(zIndexText != null){
             try {
-                width = Double.parseDouble(widthText);
-                height = Double.parseDouble(heightText);
-                x = Double.parseDouble(xText);
-                y = Double.parseDouble(yText);
-
-                if(zIndexText != null){
-                    zIndex = Integer.parseInt(zIndexText);
-                }
-            }
-            catch (NullPointerException | NumberFormatException ex){
-                LOGGER.info("invalid parameters");
-                return new  ResponseEntity<>(ex.toString(), HttpStatus.BAD_REQUEST);
+                zIndex = Integer.parseInt(zIndexText);            }
+            catch (NumberFormatException ex){
+                return new  ResponseEntity<>("The 'zIndex' parameter has wrong format", HttpStatus.BAD_REQUEST);
             }
 
+        }
+        try {
             var widget =  widgetService.createWidget(x,y,width,height,zIndex);
             return ResponseEntity.ok(jsonSerializer.serialize(widget));
         }
         catch (Exception ex){
-            LOGGER.error(ex.toString());
-            return new ResponseEntity<>(ex.toString(),HttpStatus.INTERNAL_SERVER_ERROR);
+            LOGGER.error("Server handle request error.", ex);
+            return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
