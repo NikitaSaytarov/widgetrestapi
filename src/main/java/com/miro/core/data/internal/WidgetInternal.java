@@ -14,14 +14,9 @@ public final class WidgetInternal implements Comparable<WidgetInternal>{
             Comparator.comparing((WidgetInternal widget) -> widget.getLayout().getzIndex())
             .thenComparing(widget -> widget.getGuid());
 
-    private ImmutableLayout layout;
+    private volatile ImmutableLayout layout;
     public ImmutableLayout getLayout() {
-        long stamp = locker.readLock();
-        try {
-            return layout;
-        } finally {
-            locker.unlockRead(stamp);
-        }
+        return layout;
     }
 
     private final UUID guid;
