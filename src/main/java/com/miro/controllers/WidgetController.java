@@ -5,6 +5,8 @@ import com.miro.core.exceptions.WidgetNotFoundException;
 import com.miro.services.stringSerializer.JsonSerializer;
 import com.miro.services.widgetManager.WidgetServiceImpl;
 import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -12,16 +14,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import javax.servlet.http.HttpServletRequest;
 import java.util.UUID;
 
 @Controller
 public class WidgetController {
 
-    private final Logger logger = LogManager.getLogger(WidgetController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WidgetController.class);
 
     private final WidgetServiceImpl widgetService;
     private final JsonSerializer jsonSerializer;
@@ -37,7 +36,7 @@ public class WidgetController {
     @RequestMapping(value = "/widget/create", method = RequestMethod.PUT)
     @ResponseBody
     public ResponseEntity<String> CreateWidget(HttpServletRequest request) {
-        logger.debug(request.toString());
+        LOGGER.debug(request.toString());
         try {
             String widthText = request.getParameter("width");
             String heightText = request.getParameter("height");
@@ -62,7 +61,7 @@ public class WidgetController {
                 }
             }
             catch (NullPointerException | NumberFormatException ex){
-                logger.info("invalid parameters");
+                LOGGER.info("invalid parameters");
                 return new  ResponseEntity<>(ex.toString(), HttpStatus.BAD_REQUEST);
             }
 
@@ -70,7 +69,7 @@ public class WidgetController {
             return ResponseEntity.ok(jsonSerializer.serialize(widget));
         }
         catch (Exception ex){
-            logger.error(ex);
+            LOGGER.error(ex.toString());
             return new ResponseEntity<>(ex.toString(),HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -78,7 +77,7 @@ public class WidgetController {
     @RequestMapping(value = "/widget/get", method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity<String>  GetWidget(HttpServletRequest request) {
-        logger.debug(request.toString());
+        LOGGER.debug(request.toString());
 
         String guidText = request.getParameter("guid");
         UUID guid;
@@ -86,7 +85,7 @@ public class WidgetController {
             guid = UUID.fromString(guidText);
         }
         catch(IllegalArgumentException ex){
-            logger.info("invalid parameters");
+            LOGGER.info("invalid parameters");
             return new  ResponseEntity<>(ex.toString(), HttpStatus.BAD_REQUEST);
         }
         Widget widget = null;
