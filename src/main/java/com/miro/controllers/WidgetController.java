@@ -162,7 +162,6 @@ public class WidgetController {
         }
     }
 
-
     private final class WidgetControllerInputParametersValidator {
 
         public WidgetLayoutInfo ValidateAndGetWidgetLayoutParameters(HttpServletRequest request){

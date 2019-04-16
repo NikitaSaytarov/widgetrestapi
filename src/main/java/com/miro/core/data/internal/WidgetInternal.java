@@ -2,9 +2,15 @@ package com.miro.core.data.internal;
 
 import org.apache.commons.lang3.Validate;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.temporal.ChronoField;
 import java.util.Comparator;
 import java.util.UUID;
 import java.util.concurrent.locks.StampedLock;
+import static java.util.Collections.reverseOrder;
+import static java.util.Comparator.comparing;
+
 
 public final class WidgetInternal implements Comparable<WidgetInternal>{
 
@@ -12,7 +18,8 @@ public final class WidgetInternal implements Comparable<WidgetInternal>{
 
     public static final Comparator<WidgetInternal> SORT_COMPARATOR =
             Comparator.comparing((WidgetInternal widget) -> widget.getLayout().getzIndex())
-            .thenComparing(widget -> widget.getGuid());
+                    .thenComparing(reverseOrder(comparing(widget -> widget.getCreatedAtUtcNanoSec())))
+                    .thenComparing(widget -> widget.getGuid());
 
     private volatile ImmutableLayout layout;
     public ImmutableLayout getLayout() {
@@ -24,8 +31,14 @@ public final class WidgetInternal implements Comparable<WidgetInternal>{
         return guid;
     }
 
+    private final long createdAtUtcNanoSec;
+    public long getCreatedAtUtcNanoSec() {
+        return createdAtUtcNanoSec;
+    }
+
     public WidgetInternal(UUID guid) {
         Validate.notNull(guid, "WidgetInternal guid can't be null");
+        createdAtUtcNanoSec = Instant.now(Clock.systemUTC()).getLong(ChronoField.NANO_OF_SECOND);
         this.guid = guid;
     }
 

@@ -58,18 +58,20 @@ public final class WidgetServiceImpl implements WidgetService {
         widgetLayoutInfo.setHeight(height);
 
         if(zIndex == null){
-
-            if(!widgets.isEmpty()){
+            if (widgets.isEmpty()) {
+                zIndex = 0;
+            } else {
                 var topWidget = widgets.last();
                 zIndex = topWidget.getLayout().getzIndex() + 1;
             }
-            else
-                zIndex = 0;
         }
-        else
-        {
+        else{
             var zIndexInt = zIndex.intValue();
-            var widgetWithSameIndex = widgets.stream().filter(w -> w.getLayout().getzIndex() == zIndexInt).findFirst();
+            var widgetWithSameIndex = widgets
+                    .stream()
+                    .filter(w -> w.getLayout().getzIndex() == zIndexInt)
+                    .findFirst();
+
             if(widgetWithSameIndex.isPresent()){
 
             }
