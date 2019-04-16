@@ -2,9 +2,11 @@ package com.miro.controllers;
 
 import com.miro.core.data.internal.WidgetLayoutInfo;
 import com.miro.core.exceptions.WidgetNotFoundException;
+import com.miro.core.utils.CustomStringBuilder;
 import com.miro.services.stringSerializer.JsonSerializer;
 import com.miro.services.widgetManager.WidgetServiceImpl;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.text.StrBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,7 @@ public class WidgetController {
 
     private final WidgetServiceImpl widgetService;
     private final JsonSerializer jsonSerializer;
+    private final WidgetControllerInputParametersValidator validator = new WidgetControllerInputParametersValidator();
 
     public WidgetController(WidgetServiceImpl widgetService, JsonSerializer jsonSerializer) {
         Validate.notNull(widgetService, "widgetService can't be null");
@@ -33,97 +36,11 @@ public class WidgetController {
         this.widgetService = widgetService;
     }
 
-    private WidgetLayoutInfo ValidateAndGetWidgetLayoutParameters(HttpServletRequest request){
-        var widthText = request.getParameter("width");
-        var heightText = request.getParameter("height");
-        var xText = request.getParameter("x");
-        var yText = request.getParameter("y");
-        var zIndexText = request.getParameter("zIndex");
-
-        double width;
-        double height;
-        double x;
-        double y;
-        Integer zIndex = null;
-
-        if (widthText == null || widthText.isEmpty()) {
-            throw  new IllegalArgumentException("The 'width' parameter must not be null or empty");
-        }
-
-        if (heightText == null || heightText.isEmpty()) {
-            throw  new IllegalArgumentException("The 'height' parameter must not be null or empty");
-        }
-
-        if (xText == null || xText.isEmpty()) {
-            throw  new IllegalArgumentException("The 'x' parameter must not be null or empty");
-        }
-
-        if (yText == null || yText.isEmpty()) {
-            throw  new IllegalArgumentException("The 'y' parameter must not be null or empty");
-        }
-
-        try {
-            width = Double.parseDouble(widthText);            }
-        catch (NumberFormatException ex){
-            throw  new IllegalArgumentException("The 'width' parameter has wrong format");
-        }
-        try {
-            height = Double.parseDouble(heightText);            }
-        catch (NumberFormatException ex){
-            throw  new IllegalArgumentException("The 'height' parameter has wrong format");
-        }
-        try {
-            x = Double.parseDouble(xText);      }
-        catch (NumberFormatException ex){
-            throw  new IllegalArgumentException("The 'x' parameter has wrong format");
-        }
-        try {
-            y = Double.parseDouble(yText);            }
-        catch (NumberFormatException ex){
-            throw  new IllegalArgumentException("The 'y' parameter has wrong format");
-        }
-
-        if(zIndexText != null){
-            try {
-                zIndex = Integer.parseInt(zIndexText);            }
-            catch (NumberFormatException ex){
-                throw  new IllegalArgumentException("The 'zIndex' parameter has wrong format");
-            }
-
-        }
-
-        var widgetLayoutInfo = new WidgetLayoutInfo();
-        widgetLayoutInfo.setWidth(width);
-        widgetLayoutInfo.setHeight(height);
-        widgetLayoutInfo.setX(x);
-        widgetLayoutInfo.setY(y);
-        widgetLayoutInfo.setzIndex(zIndex);
-
-        return widgetLayoutInfo;
-    }
-
-    private UUID ValidateAndGetGuidInputParameter(HttpServletRequest request){
-        String guidText = request.getParameter("guid");
-
-        if (guidText == null || guidText.isEmpty()) {
-            throw  new IllegalArgumentException("The 'guid' parameter must not be null or empty");
-        }
-
-        UUID guid;
-        try {
-            return UUID.fromString(guidText);
-        }
-        catch(IllegalArgumentException ex){
-            throw  new IllegalArgumentException("The 'guid' parameter has wrong format");
-        }
-    }
-
-
     @RequestMapping(value = "/widget/create", method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<String> CreateWidget(HttpServletRequest request) {
         try {
-            var widgetLayoutInfo = ValidateAndGetWidgetLayoutParameters(request);
+            var widgetLayoutInfo = validator.ValidateAndGetWidgetLayoutParameters(request);
             var widget =  widgetService.createWidget(widgetLayoutInfo.getX(),
                     widgetLayoutInfo.getY(),
                     widgetLayoutInfo.getWidth(),
@@ -145,7 +62,7 @@ public class WidgetController {
     @ResponseBody
     public ResponseEntity<String>  GetWidget(HttpServletRequest request) {
         try {
-            var guid = ValidateAndGetGuidInputParameter(request);
+            var guid = validator.ValidateAndGetGuidInputParameter(request);
             var widget = widgetService.getWidget(guid);
             return ResponseEntity.ok(jsonSerializer.serialize(widget));
         } catch (WidgetNotFoundException e) {
@@ -165,8 +82,8 @@ public class WidgetController {
     @ResponseBody
     public ResponseEntity UpdateWidget(HttpServletRequest request){
         try {
-            var widgetLayoutInfo = ValidateAndGetWidgetLayoutParameters(request);
-            var guid = ValidateAndGetGuidInputParameter(request);
+            var widgetLayoutInfo = validator.ValidateAndGetWidgetLayoutParameters(request);
+            var guid = validator.ValidateAndGetGuidInputParameter(request);
             widgetService.updateWidget(guid, widgetLayoutInfo);
             return new ResponseEntity(HttpStatus.OK);
         }
@@ -180,6 +97,107 @@ public class WidgetController {
         catch (Exception ex){
             LOGGER.error("Server handle request error.", ex);
             return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private final class WidgetControllerInputParametersValidator {
+
+        public WidgetLayoutInfo ValidateAndGetWidgetLayoutParameters(HttpServletRequest request){
+
+            var sb = new CustomStringBuilder();
+
+            var widthText = request.getParameter("width");
+            var heightText = request.getParameter("height");
+            var xText = request.getParameter("x");
+            var yText = request.getParameter("y");
+            var zIndexText = request.getParameter("zIndex");
+
+            double width = 0.0d;
+            double height =0.0d;
+            double x =0.0d;
+            double y =0.0d;
+            Integer zIndex = null;
+
+            if (widthText == null || widthText.isEmpty()) {
+                sb.appendLine("The 'width' parameter must not be null or empty");
+            }
+            else{
+                try {
+                    width = Double.parseDouble(widthText);}
+                catch (NumberFormatException ex){
+                    throw  new IllegalArgumentException("The 'width' parameter has wrong format");
+                }
+            }
+
+            if (heightText == null || heightText.isEmpty()) {
+                sb.appendLine("The 'height' parameter must not be null or empty");
+            }
+            else{
+                try {
+                    height = Double.parseDouble(heightText);}
+                catch (NumberFormatException ex){
+                    sb.appendLine("The 'height width' parameter has wrong format");
+                }
+            }
+
+            if (xText == null || xText.isEmpty()) {
+                sb.appendLine("The 'x' parameter must not be null or empty");
+            }
+            else{
+                try {
+                    x = Double.parseDouble(xText);      }
+                catch (NumberFormatException ex){
+                    sb.appendLine("The 'x' parameter has wrong format");
+                }
+            }
+
+            if (yText == null || yText.isEmpty()) {
+                sb.appendLine("The 'y' parameter must not be null or empty");
+            }
+            else{
+                try {
+                    y = Double.parseDouble(yText);            }
+                catch (NumberFormatException ex){
+                    sb.appendLine("The 'y' parameter has wrong format");
+                }
+            }
+
+            if(zIndexText != null){
+                try {
+                    zIndex = Integer.parseInt(zIndexText);            }
+                catch (NumberFormatException ex){
+                    sb.appendLine("The 'zIndex' parameter has wrong format");
+                }
+            }
+
+            if(sb.length() > 0){
+                throw new IllegalArgumentException(sb.toString());
+            }
+            else
+            {
+                var widgetLayoutInfo = new WidgetLayoutInfo();
+                widgetLayoutInfo.setWidth(width);
+                widgetLayoutInfo.setHeight(height);
+                widgetLayoutInfo.setX(x);
+                widgetLayoutInfo.setY(y);
+                widgetLayoutInfo.setzIndex(zIndex);
+                return widgetLayoutInfo;
+            }
+        }
+
+        public UUID ValidateAndGetGuidInputParameter(HttpServletRequest request){
+            String guidText = request.getParameter("guid");
+
+            if (guidText == null || guidText.isEmpty()) {
+                throw  new IllegalArgumentException("The 'guid' parameter must not be null or empty");
+            }
+
+            try {
+                return UUID.fromString(guidText);
+            }
+            catch(IllegalArgumentException ex){
+                throw  new IllegalArgumentException("The 'guid' parameter has wrong format");
+            }
         }
     }
 }
