@@ -1,6 +1,5 @@
 package com.miro.controllers;
 
-import com.miro.core.Widget;
 import com.miro.core.data.internal.WidgetLayoutInfo;
 import com.miro.core.exceptions.WidgetNotFoundException;
 import com.miro.core.utils.CustomStringBuilder;
@@ -62,18 +61,22 @@ public class WidgetController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
-            LOGGER.error("Server handle request error.", ex);
+            LOGGER.error("Request - " + request.getMethod() + ". Server unhandled error.", ex);
             return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @RequestMapping(value = "/{guid}", method = RequestMethod.GET)
     @ResponseBody
-    public ResponseEntity<String> GetWidget(@PathVariable String guidText, Model model) {
+    public ResponseEntity<?> GetWidget(@PathVariable("guid") String guidText, Model model) {
         try {
             var guid = validator.ValidateAndGetGuidInputParameter(guidText);
-            var widget = widgetService.getWidget(null);
-            return ResponseEntity.ok(jsonSerializer.serialize(widget));
+            var widget = widgetService.getWidget(guid);
+
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+            responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            return  new ResponseEntity<>(jsonSerializer.serialize(widget),responseHeaders,HttpStatus.OK);
         } catch (WidgetNotFoundException e) {
             return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
         }
@@ -81,19 +84,24 @@ public class WidgetController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
-            LOGGER.error("Server handle request error.", ex);
+            LOGGER.error("Server unhandled error.", ex);
             return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @RequestMapping(value = "/{guid}/update", method = RequestMethod.PUT)
+    @RequestMapping(value = "/{guid}", method = RequestMethod.PUT)
     @ResponseBody
-    public ResponseEntity UpdateWidget(HttpServletRequest request){
+    public ResponseEntity UpdateWidget(@PathVariable("guid") String guidText, HttpServletRequest request, UriComponentsBuilder componentsBuilder){
         try {
             var widgetLayoutInfo = validator.ValidateAndGetWidgetLayoutParameters(request);
-            //var guid = validator.ValidateAndGetGuidInputParameter(request);
-            widgetService.updateWidget(null, widgetLayoutInfo);
-            return new ResponseEntity(HttpStatus.OK);
+            var guid = validator.ValidateAndGetGuidInputParameter(guidText);
+            widgetService.updateWidget(guid, widgetLayoutInfo);
+
+            HttpHeaders responseHeaders = new HttpHeaders();
+            var uriComponents = componentsBuilder.path("api/v1/widgets/{guid}").buildAndExpand(guid);
+            responseHeaders.setLocation(uriComponents.toUri());
+
+            return new ResponseEntity(responseHeaders, HttpStatus.OK);
         }
         catch (WidgetNotFoundException e) {
             return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
@@ -102,7 +110,7 @@ public class WidgetController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
-            LOGGER.error("Server handle request error.", ex);
+            LOGGER.error("Request - " + request.getMethod() + ". Server unhandled error.", ex);
             return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -118,7 +126,7 @@ public class WidgetController {
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         catch (Exception ex){
-            LOGGER.error("Server handle request error.", ex);
+            LOGGER.error("Request - " + request.getMethod() + ". Server unhandled error.", ex);
             return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -138,7 +146,7 @@ public class WidgetController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
-            LOGGER.error("Server handle request error.", ex);
+            LOGGER.error("Request - " + request.getMethod() + ". Server unhandled error.", ex);
             return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
@@ -230,10 +238,19 @@ public class WidgetController {
         }
 
         public UUID ValidateAndGetGuidInputParameter(String guidText){
+            return ValidateGuidInputParameter(guidText);
+        }
+
+        public UUID ValidateAndGetGuidInputParameter(HttpServletRequest request){
+
+            var guidText = request.getParameter("guid");
+            return ValidateGuidInputParameter(guidText);
+        }
+
+        private UUID ValidateGuidInputParameter(String guidText){
             if (guidText == null || guidText.isEmpty()) {
                 throw  new IllegalArgumentException("The 'guid' parameter must not be null or empty");
             }
-
             try {
                 return UUID.fromString(guidText);
             }
@@ -241,6 +258,7 @@ public class WidgetController {
                 throw  new IllegalArgumentException("The 'guid' parameter has wrong format");
             }
         }
+
     }
 }
 
