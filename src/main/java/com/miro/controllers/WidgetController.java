@@ -125,7 +125,7 @@ public class WidgetController {
         }
         catch (WidgetNotFoundException e) {
             LOGGER.info("Request(/widget/delete) widget not found: ", e);
-            return new ResponseEntity<>("Widget not found", HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>("Widget not found", HttpStatus.NO_CONTENT);
         }
         catch (IllegalArgumentException e){
             LOGGER.info("Request(/widget/delete) wrong parameters: ", e);
