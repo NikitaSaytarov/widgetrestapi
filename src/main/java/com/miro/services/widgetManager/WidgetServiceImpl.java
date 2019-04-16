@@ -27,7 +27,7 @@ public final class WidgetServiceImpl implements WidgetService {
      * @param width widget width
      * @param height widget height
      * @param zIndex widget zIndex. zIndex can be null
-     * @return widget
+     * @return [Widget] object
      * @throws IllegalArgumentException if the input parameters are wrong
      */
     @Override
@@ -86,7 +86,7 @@ public final class WidgetServiceImpl implements WidgetService {
     /**
      * Get widget with a specific guid
      * @param widgetGuid widget guid
-     * @return widget
+     * @return [Widget] object
      * @throws NullPointerException if the widgetGuid or widgetLayoutInfo is null
      * @throws WidgetNotFoundException if widget not found
      */
@@ -160,7 +160,7 @@ public final class WidgetServiceImpl implements WidgetService {
     public void removeWidget(UUID widgetGuid) throws WidgetNotFoundException {
         Validate.notNull(widgetGuid, "widgetGuid can't be null");
 
-        var widgetAvailability = widgets.stream().filter(w -> w.getGuid() == widgetGuid).findFirst();
+        var widgetAvailability = widgets.stream().filter(w -> w.getGuid().compareTo(widgetGuid) == 0).findFirst();
 
         if(widgetAvailability.isPresent()){
             var removedWidget = widgetAvailability.get();
