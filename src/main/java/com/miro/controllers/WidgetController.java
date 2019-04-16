@@ -63,6 +63,7 @@ public class WidgetController {
             var widget = widgetService.getWidget(guid);
             return ResponseEntity.ok(jsonSerializer.serialize(widget));
         } catch (WidgetNotFoundException e) {
+            LOGGER.info("Request(/widget/get) widget not found: ", e);
             return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
         }
         catch (IllegalArgumentException e){
@@ -85,6 +86,7 @@ public class WidgetController {
             return new ResponseEntity(HttpStatus.OK);
         }
         catch (WidgetNotFoundException e) {
+            LOGGER.info("Request(/widget/update) widget not found: ", e);
             return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
         }
         catch (IllegalArgumentException e){
@@ -102,13 +104,39 @@ public class WidgetController {
     public ResponseEntity<String> GetWidgets(HttpServletRequest request){
         try {
             var allWidgets = widgetService.getAllWidgets();
-            return ResponseEntity.ok(jsonSerializer.serialize(allWidgets));
+            if(allWidgets.length > 0)
+                return ResponseEntity.ok(jsonSerializer.serialize(allWidgets));
+
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
         catch (Exception ex){
             LOGGER.error("Server handle request error.", ex);
             return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @RequestMapping(value = "/widget/delete", method = RequestMethod.DELETE)
+    @ResponseBody
+    public ResponseEntity<String> DeleteWidget(HttpServletRequest request){
+        try {
+            var guid = validator.ValidateAndGetGuidInputParameter(request);
+            widgetService.removeWidget(guid);
+            return new ResponseEntity(HttpStatus.OK);
+        }
+        catch (WidgetNotFoundException e) {
+            LOGGER.info("Request(/widget/delete) widget not found: ", e);
+            return new ResponseEntity<>("Widget not found", HttpStatus.NOT_FOUND);
+        }
+        catch (IllegalArgumentException e){
+            LOGGER.info("Request(/widget/delete) wrong parameters: ", e);
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+        catch (Exception ex){
+            LOGGER.error("Server handle request error.", ex);
+            return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     private final class WidgetControllerInputParametersValidator {
 
