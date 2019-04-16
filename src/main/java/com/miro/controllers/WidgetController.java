@@ -97,6 +97,19 @@ public class WidgetController {
         }
     }
 
+    @RequestMapping(value = "/widget/getWidgets", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<String> GetWidgets(HttpServletRequest request){
+        try {
+            var allWidgets = widgetService.getAllWidgets();
+            return ResponseEntity.ok(jsonSerializer.serialize(allWidgets));
+        }
+        catch (Exception ex){
+            LOGGER.error("Server handle request error.", ex);
+            return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private final class WidgetControllerInputParametersValidator {
 
         public WidgetLayoutInfo ValidateAndGetWidgetLayoutParameters(HttpServletRequest request){

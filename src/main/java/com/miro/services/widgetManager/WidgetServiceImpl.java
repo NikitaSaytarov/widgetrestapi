@@ -66,6 +66,14 @@ public final class WidgetServiceImpl implements WidgetService {
             else
                 zIndex = 0;
         }
+        else
+        {
+            var zIndexInt = zIndex.intValue();
+            var widgetWithSameIndex = widgets.stream().filter(w -> w.getLayout().getzIndex() == zIndexInt).findFirst();
+            if(widgetWithSameIndex.isPresent()){
+
+            }
+        }
         widgetLayoutInfo.setzIndex(zIndex);
 
         widgetInternal.createWidgetLayout(widgetLayoutInfo);
@@ -130,13 +138,16 @@ public final class WidgetServiceImpl implements WidgetService {
     }
 
     /**
-     * Get all widgets
-     * @return widgets array
+     * Get all widgets sorted by zIndex
+     * @return [Widget]'s array
      */
     @Override
     public Widget[] getAllWidgets() {
-
-        return widgetMapper.mapArray((WidgetInternal[]) widgets.toArray());
+        var widgetsRaw = widgets.toArray(new WidgetInternal[widgets.size()]);
+        if(widgetsRaw.length > 0){
+            return widgetMapper.mapArray(widgetsRaw);
+        }
+        return new Widget[0];
     }
 
     /**
@@ -154,7 +165,8 @@ public final class WidgetServiceImpl implements WidgetService {
         if(widgetAvailability.isPresent()){
             var removedWidget = widgetAvailability.get();
             var result = widgets.remove(removedWidget);
-            if(result) return;
+            if(result)
+                return;
         }
 
         throw new WidgetNotFoundException();

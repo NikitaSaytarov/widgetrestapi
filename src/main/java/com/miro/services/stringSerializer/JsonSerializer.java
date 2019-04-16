@@ -1,25 +1,26 @@
 package com.miro.services.stringSerializer;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.miro.core.Widget;
 import org.springframework.stereotype.Service;
 
 @Service
 public class JsonSerializer implements StringSerializer {
 
-    private final Gson gson = new Gson();
+    private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
     public JsonSerializer() {
     }
 
     @Override
-    public <T extends Widget> String serialize(T widget) {
-        return gson.toJson(widget);
+    public <T> String serialize(T object) {
+        return gson.toJson(object);
     }
 
     @Override
-    public <T extends Widget> T deserialize(String widgetString) {
-        Widget widget = gson.fromJson(widgetString, Widget.class);
+    public <T> T deserialize(String objectString) {
+        Widget widget = gson.fromJson(objectString, Widget.class);
         return (T) widget;
     }
 }
