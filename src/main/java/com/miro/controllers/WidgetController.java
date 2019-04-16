@@ -1,5 +1,6 @@
 package com.miro.controllers;
 
+import com.miro.core.Widget;
 import com.miro.core.data.internal.WidgetLayoutInfo;
 import com.miro.core.exceptions.WidgetNotFoundException;
 import com.miro.core.utils.CustomStringBuilder;
@@ -8,17 +9,20 @@ import com.miro.services.widgetManager.WidgetServiceImpl;
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import java.util.UUID;
 
 @RestController
+@RequestMapping("api/v1/widgets")
 public class WidgetController {
     private static final Logger LOGGER = LoggerFactory.getLogger(WidgetController.class);
     private final WidgetServiceImpl widgetService;
@@ -33,9 +37,9 @@ public class WidgetController {
         this.widgetService = widgetService;
     }
 
-    @RequestMapping(value = "/widget/create", method = RequestMethod.POST)
+    @RequestMapping(value = "/add", method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity<String> CreateWidget(HttpServletRequest request) {
+    public ResponseEntity<?> CreateWidget(HttpServletRequest request, UriComponentsBuilder componentsBuilder) {
         try {
             var widgetLayoutInfo = validator.ValidateAndGetWidgetLayoutParameters(request);
             var widget =  widgetService.createWidget(widgetLayoutInfo.getX(),
@@ -43,31 +47,18 @@ public class WidgetController {
                     widgetLayoutInfo.getWidth(),
                     widgetLayoutInfo.getHeight(),
                     widgetLayoutInfo.getzIndex());
-            return ResponseEntity.ok(jsonSerializer.serialize(widget));
-        }
-        catch (IllegalArgumentException e){
-            LOGGER.info("Request(/widget/create) wrong parameters: ", e);
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        }
-        catch (Exception ex){
-            LOGGER.error("Server handle request error.", ex.getMessage());
-            return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
 
-    @RequestMapping(value = "/widget/get", method = RequestMethod.GET)
-    @ResponseBody
-    public ResponseEntity<String>  GetWidget(HttpServletRequest request) {
-        try {
-            var guid = validator.ValidateAndGetGuidInputParameter(request);
-            var widget = widgetService.getWidget(guid);
-            return ResponseEntity.ok(jsonSerializer.serialize(widget));
-        } catch (WidgetNotFoundException e) {
-            LOGGER.info("Request(/widget/get) widget not found: ", e);
-            return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
+            HttpHeaders responseHeaders = new HttpHeaders();
+            var uriComponents = componentsBuilder.path("api/v1/widgets/{guid}").buildAndExpand(widget.getGuid());
+            responseHeaders.setLocation(uriComponents.toUri());
+            responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+            responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+
+            return ResponseEntity.created(uriComponents.toUri())
+                    .headers(responseHeaders)
+                    .body(jsonSerializer.serialize(widget));
         }
         catch (IllegalArgumentException e){
-            LOGGER.info("Request(/widget/get) wrong parameters: ", e);
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
@@ -76,21 +67,38 @@ public class WidgetController {
         }
     }
 
-    @RequestMapping(value = "/widget/update", method = RequestMethod.PUT)
+    @RequestMapping(value = "/{guid}", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<String> GetWidget(@PathVariable String guidText, Model model) {
+        try {
+            var guid = validator.ValidateAndGetGuidInputParameter(guidText);
+            var widget = widgetService.getWidget(null);
+            return ResponseEntity.ok(jsonSerializer.serialize(widget));
+        } catch (WidgetNotFoundException e) {
+            return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
+        }
+        catch (IllegalArgumentException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+        catch (Exception ex){
+            LOGGER.error("Server handle request error.", ex);
+            return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @RequestMapping(value = "/{guid}/update", method = RequestMethod.PUT)
     @ResponseBody
     public ResponseEntity UpdateWidget(HttpServletRequest request){
         try {
             var widgetLayoutInfo = validator.ValidateAndGetWidgetLayoutParameters(request);
-            var guid = validator.ValidateAndGetGuidInputParameter(request);
-            widgetService.updateWidget(guid, widgetLayoutInfo);
+            //var guid = validator.ValidateAndGetGuidInputParameter(request);
+            widgetService.updateWidget(null, widgetLayoutInfo);
             return new ResponseEntity(HttpStatus.OK);
         }
         catch (WidgetNotFoundException e) {
-            LOGGER.info("Request(/widget/update) widget not found: ", e);
             return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
         }
         catch (IllegalArgumentException e){
-            LOGGER.info("Request(/widget/update) wrong parameters: ", e);
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
@@ -99,7 +107,7 @@ public class WidgetController {
         }
     }
 
-    @RequestMapping(value = "/widget/getWidgets", method = RequestMethod.GET)
+    @RequestMapping(value = "/", method = RequestMethod.GET)
     @ResponseBody
     public ResponseEntity<String> GetWidgets(HttpServletRequest request){
         try {
@@ -115,20 +123,18 @@ public class WidgetController {
         }
     }
 
-    @RequestMapping(value = "/widget/delete", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/{guid}/delete", method = RequestMethod.DELETE)
     @ResponseBody
     public ResponseEntity<String> DeleteWidget(HttpServletRequest request){
         try {
-            var guid = validator.ValidateAndGetGuidInputParameter(request);
-            widgetService.removeWidget(guid);
+            //var guid = validator.ValidateAndGetGuidInputParameter(request);
+            widgetService.removeWidget(null);
             return new ResponseEntity(HttpStatus.OK);
         }
         catch (WidgetNotFoundException e) {
-            LOGGER.info("Request(/widget/delete) widget not found: ", e);
             return new ResponseEntity<>("Widget not found", HttpStatus.NO_CONTENT);
         }
         catch (IllegalArgumentException e){
-            LOGGER.info("Request(/widget/delete) wrong parameters: ", e);
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
@@ -223,9 +229,7 @@ public class WidgetController {
             }
         }
 
-        public UUID ValidateAndGetGuidInputParameter(HttpServletRequest request){
-            String guidText = request.getParameter("guid");
-
+        public UUID ValidateAndGetGuidInputParameter(String guidText){
             if (guidText == null || guidText.isEmpty()) {
                 throw  new IllegalArgumentException("The 'guid' parameter must not be null or empty");
             }
