@@ -6,7 +6,6 @@ import com.miro.core.utils.CustomStringBuilder;
 import com.miro.services.stringSerializer.JsonSerializer;
 import com.miro.services.widgetManager.WidgetServiceImpl;
 import org.apache.commons.lang3.Validate;
-import org.apache.commons.lang3.text.StrBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -21,9 +20,7 @@ import java.util.UUID;
 
 @RestController
 public class WidgetController {
-
     private static final Logger LOGGER = LoggerFactory.getLogger(WidgetController.class);
-
     private final WidgetServiceImpl widgetService;
     private final JsonSerializer jsonSerializer;
     private final WidgetControllerInputParametersValidator validator = new WidgetControllerInputParametersValidator();
@@ -49,7 +46,7 @@ public class WidgetController {
             return ResponseEntity.ok(jsonSerializer.serialize(widget));
         }
         catch (IllegalArgumentException e){
-            LOGGER.info("Request(/widget/create) wrong parameters: ", e.getMessage());
+            LOGGER.info("Request(/widget/create) wrong parameters: ", e);
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
@@ -69,7 +66,7 @@ public class WidgetController {
             return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
         }
         catch (IllegalArgumentException e){
-            LOGGER.info("Request(/widget/get) wrong parameters: ", e.getMessage());
+            LOGGER.info("Request(/widget/get) wrong parameters: ", e);
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
@@ -91,7 +88,7 @@ public class WidgetController {
             return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
         }
         catch (IllegalArgumentException e){
-            LOGGER.info("Request(/widget/update) wrong parameters: ", e.getMessage());
+            LOGGER.info("Request(/widget/update) wrong parameters: ", e);
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
