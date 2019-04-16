@@ -68,7 +68,9 @@ public class WidgetController {
 
     @RequestMapping(value = "/{guid}", method = RequestMethod.GET)
     @ResponseBody
-    public ResponseEntity<?> GetWidget(@PathVariable("guid") String guidText, Model model) {
+    public ResponseEntity<?> GetWidget(@PathVariable("guid") String guidText,
+                                       Model model,
+                                       HttpServletRequest request) {
         try {
             var guid = validator.ValidateAndGetGuidInputParameter(guidText);
             var widget = widgetService.getWidget(guid);
@@ -84,14 +86,16 @@ public class WidgetController {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
         catch (Exception ex){
-            LOGGER.error("Server unhandled error.", ex);
+            LOGGER.error("Request - " + request.getMethod() + ". Server unhandled error.", ex);
             return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @RequestMapping(value = "/{guid}", method = RequestMethod.PUT)
     @ResponseBody
-    public ResponseEntity UpdateWidget(@PathVariable("guid") String guidText, HttpServletRequest request, UriComponentsBuilder componentsBuilder){
+    public ResponseEntity UpdateWidget(@PathVariable("guid") String guidText,
+                                       HttpServletRequest request,
+                                       UriComponentsBuilder componentsBuilder){
         try {
             var widgetLayoutInfo = validator.ValidateAndGetWidgetLayoutParameters(request);
             var guid = validator.ValidateAndGetGuidInputParameter(guidText);
@@ -120,8 +124,14 @@ public class WidgetController {
     public ResponseEntity<String> GetWidgets(HttpServletRequest request){
         try {
             var allWidgets = widgetService.getAllWidgets();
-            if(allWidgets.length > 0)
-                return ResponseEntity.ok(jsonSerializer.serialize(allWidgets));
+            if(allWidgets.length > 0){
+                var widgetsGuid = Arrays.stream(allWidgets).map(w -> w.getGuid()).toArray();
+
+                HttpHeaders responseHeaders = new HttpHeaders();
+                responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+                responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+                return  new ResponseEntity<>(jsonSerializer.serialize(widgetsGuid),responseHeaders,HttpStatus.OK);
+            }
 
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
         }
@@ -131,16 +141,17 @@ public class WidgetController {
         }
     }
 
-    @RequestMapping(value = "/{guid}/delete", method = RequestMethod.DELETE)
+    @RequestMapping(value = "/{guid}", method = RequestMethod.DELETE)
     @ResponseBody
-    public ResponseEntity<String> DeleteWidget(HttpServletRequest request){
+    public ResponseEntity<String> DeleteWidget(@PathVariable("guid") String guidText,
+                                               HttpServletRequest request){
         try {
-            //var guid = validator.ValidateAndGetGuidInputParameter(request);
-            widgetService.removeWidget(null);
+            var guid = validator.ValidateAndGetGuidInputParameter(guidText);
+            widgetService.removeWidget(guid);
             return new ResponseEntity(HttpStatus.OK);
         }
         catch (WidgetNotFoundException e) {
-            return new ResponseEntity<>("Widget not found", HttpStatus.NO_CONTENT);
+            return new ResponseEntity(HttpStatus.OK); //DELETE is idempotent
         }
         catch (IllegalArgumentException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -238,12 +249,6 @@ public class WidgetController {
         }
 
         public UUID ValidateAndGetGuidInputParameter(String guidText){
-            return ValidateGuidInputParameter(guidText);
-        }
-
-        public UUID ValidateAndGetGuidInputParameter(HttpServletRequest request){
-
-            var guidText = request.getParameter("guid");
             return ValidateGuidInputParameter(guidText);
         }
 
