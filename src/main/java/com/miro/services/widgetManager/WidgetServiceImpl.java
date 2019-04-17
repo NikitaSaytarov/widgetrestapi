@@ -8,17 +8,20 @@ import com.miro.core.mapping.WidgetMapper;
 import org.apache.commons.lang3.Validate;
 import org.springframework.stereotype.Service;
 
-import java.awt.*;
 import java.awt.geom.Rectangle2D;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.function.Predicate;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 @Service
 public final class WidgetServiceImpl implements WidgetService {
 
-    private final ConcurrentSkipListSet<WidgetInternal> widgets = new ConcurrentSkipListSet<>(WidgetInternal.SORT_COMPARATOR);
+    private static final ReadWriteLock locker = new ReentrantReadWriteLock();//private static final StampedLock locker = new StampedLock();
+    private static final ConcurrentSkipListSet<WidgetInternal> widgets = new ConcurrentSkipListSet<>(WidgetInternal.SORT_COMPARATOR);
     private final WidgetMapper widgetMapper ;
 
     public WidgetServiceImpl() {
@@ -87,9 +90,8 @@ public final class WidgetServiceImpl implements WidgetService {
      */
     @Override
     public Widget getWidget(UUID widgetGuid) throws WidgetNotFoundException {
-        Validate.notNull(widgetGuid, "widgetGuid can't be null");
 
-        var widgetAvailability = widgets.stream().filter(w -> w.getGuid().compareTo(widgetGuid) == 0).findFirst();
+        Optional<WidgetInternal> widgetAvailability =  GetWidgetByGuid(widgetGuid);
         if(widgetAvailability.isPresent()){
             var widget = widgetMapper.map(widgetAvailability.get());
             return widget;
@@ -112,23 +114,27 @@ public final class WidgetServiceImpl implements WidgetService {
         var widgetAvailability = widgets.stream().filter(w -> w.getGuid().compareTo(widgetGuid) == 0).findFirst();
         if(widgetAvailability.isPresent()){
             var widget = widgetAvailability.get();
+
             var isZIndexWillChange = widgetLayoutInfo.getzIndex() != null;
-
             if(isZIndexWillChange){
-                var removeResult = widgets.remove(widget);
-                if(!removeResult) {
-                    throw new WidgetNotFoundException();
-                };
+                try {
+                    locker.writeLock().lock();
+
+                    var removeResult = widgets.remove(widget);
+                    if(!removeResult) {
+                        throw new WidgetNotFoundException();
+                    };
+                    widget = new WidgetInternal(widgetGuid);
+                    widget.createWidgetLayout(widgetLayoutInfo);
+                    widgets.add(widget);
+                    return;
+                }
+                finally {
+                    locker.writeLock().unlock();
+                }
             }
 
-            if(isZIndexWillChange){
-                widget = new WidgetInternal(widgetGuid);
-                widget.createWidgetLayout(widgetLayoutInfo);
-                widgets.add(widget);
-            }
-            else
-                widget.updateWidgetLayout(widgetLayoutInfo);
-
+            widget.updateWidgetLayout(widgetLayoutInfo);
             return;
         }
         throw new WidgetNotFoundException();
@@ -140,7 +146,16 @@ public final class WidgetServiceImpl implements WidgetService {
      */
     @Override
     public Widget[] getAllWidgets() {
-        var widgetsRaw = widgets.toArray(new WidgetInternal[widgets.size()]);
+
+        WidgetInternal[] widgetsRaw;
+        try {
+            locker.readLock().lock();
+            widgetsRaw = widgets.toArray(new WidgetInternal[widgets.size()]);
+        }
+        finally {
+            locker.readLock().unlock();
+        }
+
         if(widgetsRaw.length > 0){
             return widgetMapper.mapArray(widgetsRaw);
         }
@@ -155,13 +170,20 @@ public final class WidgetServiceImpl implements WidgetService {
      */
     @Override
     public Widget[] getWidgets(int limit, int offset) {
-        Validate.isTrue(limit > 0, "limit can't be negative");
-        Validate.isTrue(offset > 0, "offset can't be negative");
+        Validate.isTrue(limit >= 0, "limit can't be negative");
+        Validate.isTrue(offset >= 0, "offset can't be negative");
 
-        var setOfWidgets = widgets.stream()
+        List<WidgetInternal> setOfWidgets;
+        try {
+            locker.readLock().lock();
+            setOfWidgets = widgets.stream()
                 .skip(offset)
                 .limit(limit)
                 .collect(Collectors.toList());
+        }
+        finally {
+            locker.readLock().unlock();
+        }
 
         var setOfWidgetsRaw = setOfWidgets.toArray(new WidgetInternal[setOfWidgets.size()]);
 
@@ -178,14 +200,21 @@ public final class WidgetServiceImpl implements WidgetService {
         Validate.isTrue(x2 >= 0, "x2 can't be negative");
         Validate.isTrue(y2 >= 0, "y2 can't be negative");
 
-        var setOfWidgets = widgets.stream()
-                .filter(w -> isOverlappingPredicate(new Rectangle2D.Double(
-                        w.getLayout().getVertex().getX(),
-                        w.getLayout().getVertex().getY(),
-                        w.getLayout().getVertex().getX() + w.getLayout().getSize().getWidth(),
-                        w.getLayout().getVertex().getY() + w.getLayout().getSize().getHeight()),
-                        new Rectangle2D.Double(x1,x2,y1,y2)))
-                .collect(Collectors.toList());
+        List<WidgetInternal> setOfWidgets;
+        try {
+            locker.readLock().lock();
+            setOfWidgets = widgets.stream()
+            .filter(w -> isOverlappingPredicate(new Rectangle2D.Double(
+                    w.getLayout().getVertex().getX(),
+                    w.getLayout().getVertex().getY(),
+                    w.getLayout().getVertex().getX() + w.getLayout().getSize().getWidth(),
+                    w.getLayout().getVertex().getY() + w.getLayout().getSize().getHeight()),
+                    new Rectangle2D.Double(x1,x2,y1,y2)))
+            .collect(Collectors.toList());
+        }
+        finally {
+            locker.readLock().unlock();
+        }
 
         var setOfWidgetsRaw = setOfWidgets.toArray(new WidgetInternal[setOfWidgets.size()]);
 
@@ -207,9 +236,8 @@ public final class WidgetServiceImpl implements WidgetService {
      */
     @Override
     public void removeWidget(UUID widgetGuid) throws WidgetNotFoundException {
-        Validate.notNull(widgetGuid, "widgetGuid can't be null");
 
-        var widgetAvailability = widgets.stream().filter(w -> w.getGuid().compareTo(widgetGuid) == 0).findFirst();
+        Optional<WidgetInternal> widgetAvailability =  GetWidgetByGuid(widgetGuid);
 
         if(widgetAvailability.isPresent()){
             var removedWidget = widgetAvailability.get();
@@ -220,6 +248,24 @@ public final class WidgetServiceImpl implements WidgetService {
 
         throw new WidgetNotFoundException();
     }
+
+    private Optional<WidgetInternal> GetWidgetByGuid(UUID widgetGuid) {
+        Validate.notNull(widgetGuid, "widgetGuid can't be null");
+
+        Optional<WidgetInternal> widgetAvailability;
+        try {
+            locker.readLock().lock();
+            widgetAvailability = widgets.stream()
+                    .filter(w -> w.getGuid().compareTo(widgetGuid) == 0)
+                    .findFirst();
+            return widgetAvailability;
+        }
+        finally {
+            locker.readLock().unlock();
+        }
+    }
+
+
 }
 
 

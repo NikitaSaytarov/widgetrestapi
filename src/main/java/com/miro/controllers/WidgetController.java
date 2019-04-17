@@ -155,12 +155,12 @@ public class WidgetController {
         try {
             var allWidgets = widgetService.getAllWidgets();
             if(allWidgets.length > 0){
-                var widgetsGuid = Arrays.stream(allWidgets).map(w -> w.getGuid()).toArray();
+                //var widgetsGuid = Arrays.stream(allWidgets).map(w -> w.getGuid()).toArray();
 
                 HttpHeaders responseHeaders = new HttpHeaders();
                 responseHeaders.setContentType(MediaType.APPLICATION_JSON);
                 responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-                return  new ResponseEntity<>(jsonSerializer.serialize(widgetsGuid),responseHeaders,HttpStatus.OK);
+                return  new ResponseEntity<>(jsonSerializer.serialize(allWidgets),responseHeaders,HttpStatus.OK);
             }
 
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
