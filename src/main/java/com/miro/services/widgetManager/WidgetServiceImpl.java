@@ -8,8 +8,10 @@ import com.miro.core.mapping.WidgetMapper;
 import org.apache.commons.lang3.Validate;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 @Service
 public final class WidgetServiceImpl implements WidgetService {
@@ -63,17 +65,6 @@ public final class WidgetServiceImpl implements WidgetService {
             } else {
                 var topWidget = widgets.last();
                 zIndex = topWidget.getLayout().getzIndex() + 1;
-            }
-        }
-        else{
-            var zIndexInt = zIndex.intValue();
-            var widgetWithSameIndex = widgets
-                    .stream()
-                    .filter(w -> w.getLayout().getzIndex() == zIndexInt)
-                    .findFirst();
-
-            if(widgetWithSameIndex.isPresent()){
-
             }
         }
         widgetLayoutInfo.setzIndex(zIndex);
@@ -148,6 +139,28 @@ public final class WidgetServiceImpl implements WidgetService {
         var widgetsRaw = widgets.toArray(new WidgetInternal[widgets.size()]);
         if(widgetsRaw.length > 0){
             return widgetMapper.mapArray(widgetsRaw);
+        }
+        return new Widget[0];
+    }
+
+    /**
+     * Get widgets sorted by zIndex with limit and offset
+     * @param limit limit
+     * @param offset offset
+     * @return [Widget]'s array
+     */
+    @Override
+    public Widget[] getWidgets(int limit, int offset) {
+        var setOfWidgets = widgets.stream()
+                .skip(offset)
+                .limit(limit)
+                .collect(Collectors.toList());
+
+        var setOfWidgetsRaw = setOfWidgets.toArray(new WidgetInternal[setOfWidgets.size()]);
+
+
+        if(setOfWidgetsRaw.length > 0){
+            return widgetMapper.mapArray(setOfWidgetsRaw);
         }
         return new Widget[0];
     }

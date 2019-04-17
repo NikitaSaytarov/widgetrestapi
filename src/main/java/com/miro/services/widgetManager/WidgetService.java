@@ -12,6 +12,7 @@ interface WidgetService {
     void updateWidget(UUID widgetGuid, WidgetLayoutInfo widgetInfo) throws WidgetNotFoundException;
     Widget[] getAllWidgets();
     void removeWidget(UUID widgetGuid) throws WidgetNotFoundException;
+    Widget[] getWidgets(int limit, int offset);
 }
 
 

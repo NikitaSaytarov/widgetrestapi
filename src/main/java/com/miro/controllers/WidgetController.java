@@ -6,6 +6,7 @@ import com.miro.core.utils.CustomStringBuilder;
 import com.miro.services.stringSerializer.JsonSerializer;
 import com.miro.services.widgetManager.WidgetServiceImpl;
 import org.apache.commons.lang3.Validate;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -18,6 +19,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 
 @RestController
@@ -93,7 +95,7 @@ public class WidgetController {
 
     @RequestMapping(value = "/{guid}", method = RequestMethod.PUT)
     @ResponseBody
-    public ResponseEntity UpdateWidget(@PathVariable("guid") String guidText,
+    public ResponseEntity<?> UpdateWidget(@PathVariable("guid") String guidText,
                                        HttpServletRequest request,
                                        UriComponentsBuilder componentsBuilder){
         try {
@@ -121,7 +123,7 @@ public class WidgetController {
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     @ResponseBody
-    public ResponseEntity<String> GetWidgets(HttpServletRequest request){
+    public ResponseEntity<?> GetWidgets(HttpServletRequest request){
         try {
             var allWidgets = widgetService.getAllWidgets();
             if(allWidgets.length > 0){
@@ -141,9 +143,36 @@ public class WidgetController {
         }
     }
 
+    @RequestMapping(value = "/limit", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<?> Pagination(@RequestParam(value = "limit", required = false) String limitText,
+                                        @RequestParam(value = "offset", required = false) String offsetText,
+                                        HttpServletRequest request){
+        try {
+            var parametersPair = validator.ValidateAndGetPaginationInputParameter(limitText, offsetText);
+
+            var widgets = widgetService.getWidgets(parametersPair.getKey(), parametersPair.getValue());
+            if(widgets.length > 0){
+                HttpHeaders responseHeaders = new HttpHeaders();
+                responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+                responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+                return  new ResponseEntity<>(jsonSerializer.serialize(widgets),responseHeaders,HttpStatus.OK);
+            }
+
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        }
+        catch (IllegalArgumentException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+        catch (Exception ex){
+            LOGGER.error("Request - " + request.getMethod() + ". Server unhandled error.", ex);
+            return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @RequestMapping(value = "/{guid}", method = RequestMethod.DELETE)
     @ResponseBody
-    public ResponseEntity<String> DeleteWidget(@PathVariable("guid") String guidText,
+    public ResponseEntity<?> DeleteWidget(@PathVariable("guid") String guidText,
                                                HttpServletRequest request){
         try {
             var guid = validator.ValidateAndGetGuidInputParameter(guidText);
@@ -263,6 +292,43 @@ public class WidgetController {
             }
         }
 
+        public Pair<Integer, Integer> ValidateAndGetPaginationInputParameter(String limitText, String offsetText) {
+            var sb = new CustomStringBuilder();
+
+            Integer limit = 0;
+            Integer offset = 0;
+
+            if (limitText == null) {
+                limit = 10;
+            }
+            else{
+                try {
+                    limit = Integer.parseInt(limitText);
+
+                    if(limit > 500){
+                        sb.appendLine("The 'limit' parameter more than 500");
+                    }
+                }
+                catch (NumberFormatException ex){
+                    sb.appendLine("The 'limit' parameter has wrong format");
+                }
+            }
+
+            if (offsetText != null && !offsetText.isEmpty()) {
+                try {
+                    offset = Integer.parseInt(offsetText);}
+                catch (NumberFormatException ex){
+                    sb.appendLine("The 'offset' parameter has wrong format");
+                }
+            }
+
+            if(sb.length() > 0){
+                throw new IllegalArgumentException(sb.toString());
+            }
+            else{
+                return Pair.of(limit, offset);
+            }
+        }
     }
 }
 
