@@ -8,9 +8,11 @@ import com.miro.core.mapping.WidgetMapper;
 import org.apache.commons.lang3.Validate;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Service
@@ -151,6 +153,9 @@ public final class WidgetServiceImpl implements WidgetService {
      */
     @Override
     public Widget[] getWidgets(int limit, int offset) {
+        Validate.isTrue(limit > 0, "limit can't be negative");
+        Validate.isTrue(offset > 0, "offset can't be negative");
+
         var setOfWidgets = widgets.stream()
                 .skip(offset)
                 .limit(limit)
@@ -158,11 +163,38 @@ public final class WidgetServiceImpl implements WidgetService {
 
         var setOfWidgetsRaw = setOfWidgets.toArray(new WidgetInternal[setOfWidgets.size()]);
 
+        if(setOfWidgetsRaw.length > 0){
+            return widgetMapper.mapArray(setOfWidgetsRaw);
+        }
+        return new Widget[0];
+    }
+
+    @Override
+    public Widget[] filterAndGetWidgets(double x1, double x2, double y1, double y2) {
+        Validate.isTrue(x1 >= 0, "x1 can't be negative");
+        Validate.isTrue(y1 >= 0, "y1 can't be negative");
+        Validate.isTrue(x2 >= 0, "x2 can't be negative");
+        Validate.isTrue(y2 >= 0, "y2 can't be negative");
+
+        var setOfWidgets = widgets.stream()
+                .filter(w -> isOverlappingPredicate(new Rectangle2D.Double(
+                        w.getLayout().getVertex().getX(),
+                        w.getLayout().getVertex().getY(),
+                        w.getLayout().getVertex().getX() + w.getLayout().getSize().getWidth(),
+                        w.getLayout().getVertex().getY() + w.getLayout().getSize().getHeight()),
+                        new Rectangle2D.Double(x1,x2,y1,y2)))
+                .collect(Collectors.toList());
+
+        var setOfWidgetsRaw = setOfWidgets.toArray(new WidgetInternal[setOfWidgets.size()]);
 
         if(setOfWidgetsRaw.length > 0){
             return widgetMapper.mapArray(setOfWidgetsRaw);
         }
         return new Widget[0];
+    }
+
+    private boolean isOverlappingPredicate(Rectangle2D widgetRectangle, Rectangle2D area) {
+        return widgetRectangle.intersects(area);
     }
 
     /**

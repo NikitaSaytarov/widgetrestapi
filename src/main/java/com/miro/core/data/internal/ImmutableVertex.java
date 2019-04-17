@@ -13,7 +13,7 @@ public final class ImmutableVertex implements Cloneable{
         return y;
     }
 
-    ImmutableVertex(double x, double y) {
+    public ImmutableVertex(double x, double y) {
         Validate.notNaN(x, "ImmutableVertex x can't be NaN");
         Validate.notNaN(y, "ImmutableVertex y can't be NaN");
 

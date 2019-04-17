@@ -1,5 +1,7 @@
 package com.miro.controllers;
 
+import com.miro.core.Widget;
+import com.miro.core.data.internal.ImmutableVertex;
 import com.miro.core.data.internal.WidgetLayoutInfo;
 import com.miro.core.exceptions.WidgetNotFoundException;
 import com.miro.core.utils.CustomStringBuilder;
@@ -150,16 +152,8 @@ public class WidgetController {
                                         HttpServletRequest request){
         try {
             var parametersPair = validator.ValidateAndGetPaginationInputParameter(limitText, offsetText);
-
             var widgets = widgetService.getWidgets(parametersPair.getKey(), parametersPair.getValue());
-            if(widgets.length > 0){
-                HttpHeaders responseHeaders = new HttpHeaders();
-                responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-                responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-                return  new ResponseEntity<>(jsonSerializer.serialize(widgets),responseHeaders,HttpStatus.OK);
-            }
-
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            return getResponseEntity(widgets);
         }
         catch (IllegalArgumentException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -169,6 +163,43 @@ public class WidgetController {
             return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+    @RequestMapping(value = "/filter", method = RequestMethod.GET)
+    @ResponseBody
+    public ResponseEntity<?> Pagination(@RequestParam(value = "x1") String x1Text,
+                                        @RequestParam(value = "x2") String x2Text,
+                                        @RequestParam(value = "y1") String y1Text,
+                                        @RequestParam(value = "y2") String y2Text,
+                                        HttpServletRequest request){
+        try {
+            var vertexParametersPair = validator.ValidateAndGetFilterInputParameter(x1Text, y1Text, x2Text, y2Text);
+            var x1 = vertexParametersPair.getKey().getX();
+            var y1 = vertexParametersPair.getKey().getY();
+            var x2 = vertexParametersPair.getValue().getX();
+            var y2 = vertexParametersPair.getValue().getY();
+
+            var widgets = widgetService.filterAndGetWidgets(x1, x2, y1, y2);
+            return getResponseEntity(widgets);
+        }
+        catch (IllegalArgumentException e){
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
+        catch (Exception ex){
+            LOGGER.error("Request - " + request.getMethod() + ". Server unhandled error.", ex);
+            return new ResponseEntity<>("Server handle request error. Details: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private ResponseEntity<?> getResponseEntity(Widget[] widgets) {
+        if(widgets.length > 0){
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+            responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            return  new ResponseEntity<>(jsonSerializer.serialize(widgets),responseHeaders, HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
 
     @RequestMapping(value = "/{guid}", method = RequestMethod.DELETE)
     @ResponseBody
@@ -214,7 +245,11 @@ public class WidgetController {
             }
             else{
                 try {
-                    width = Double.parseDouble(widthText);}
+                    width = Double.parseDouble(widthText);
+                    if(width < 0){
+                        sb.appendLine("The 'width' can't be negative");
+                    }
+                }
                 catch (NumberFormatException ex){
                     throw  new IllegalArgumentException("The 'width' parameter has wrong format");
                 }
@@ -225,9 +260,13 @@ public class WidgetController {
             }
             else{
                 try {
-                    height = Double.parseDouble(heightText);}
+                    height = Double.parseDouble(heightText);
+                    if(height < 0){
+                        sb.appendLine("The 'height' can't be negative");
+                    }
+                }
                 catch (NumberFormatException ex){
-                    sb.appendLine("The 'height width' parameter has wrong format");
+                    sb.appendLine("The 'height height' parameter has wrong format");
                 }
             }
 
@@ -236,7 +275,11 @@ public class WidgetController {
             }
             else{
                 try {
-                    x = Double.parseDouble(xText);      }
+                    x = Double.parseDouble(xText);
+                    if(x < 0){
+                        sb.appendLine("The 'x' can't be negative");
+                    }
+                }
                 catch (NumberFormatException ex){
                     sb.appendLine("The 'x' parameter has wrong format");
                 }
@@ -247,7 +290,11 @@ public class WidgetController {
             }
             else{
                 try {
-                    y = Double.parseDouble(yText);            }
+                    y = Double.parseDouble(yText);
+                    if(y < 0){
+                        sb.appendLine("The 'y' can't be negative");
+                    }
+                }
                 catch (NumberFormatException ex){
                     sb.appendLine("The 'y' parameter has wrong format");
                 }
@@ -255,7 +302,10 @@ public class WidgetController {
 
             if(zIndexText != null){
                 try {
-                    zIndex = Integer.parseInt(zIndexText);            }
+                    zIndex = Integer.parseInt(zIndexText);
+                    if(zIndex < 0){
+                        sb.appendLine("The 'zIndex' can't be negative");
+                    }}
                 catch (NumberFormatException ex){
                     sb.appendLine("The 'zIndex' parameter has wrong format");
                 }
@@ -293,10 +343,10 @@ public class WidgetController {
         }
 
         public Pair<Integer, Integer> ValidateAndGetPaginationInputParameter(String limitText, String offsetText) {
-            var sb = new CustomStringBuilder();
-
             Integer limit = 0;
             Integer offset = 0;
+
+            var sb = new CustomStringBuilder();
 
             if (limitText == null) {
                 limit = 10;
@@ -305,7 +355,10 @@ public class WidgetController {
                 try {
                     limit = Integer.parseInt(limitText);
 
-                    if(limit > 500){
+                    if(limit < 0){
+                        sb.appendLine("The 'limit' can't be negative");
+                    }
+                    else if(limit > 500){
                         sb.appendLine("The 'limit' parameter more than 500");
                     }
                 }
@@ -316,7 +369,10 @@ public class WidgetController {
 
             if (offsetText != null && !offsetText.isEmpty()) {
                 try {
-                    offset = Integer.parseInt(offsetText);}
+                    offset = Integer.parseInt(offsetText);
+                    if(offset < 0){
+                        sb.appendLine("The 'offset' can't be negative");
+                    }}
                 catch (NumberFormatException ex){
                     sb.appendLine("The 'offset' parameter has wrong format");
                 }
@@ -327,6 +383,79 @@ public class WidgetController {
             }
             else{
                 return Pair.of(limit, offset);
+            }
+        }
+
+        public Pair<ImmutableVertex, ImmutableVertex> ValidateAndGetFilterInputParameter(String x1Text, String x2Text, String y1Text, String y2Text) {
+            double x1 =0.0d;
+            double y1 =0.0d;
+            double x2 =0.0d;
+            double y2 =0.0d;
+
+            var sb = new CustomStringBuilder();
+
+            if (x1Text == null || x1Text.isEmpty()) {
+                sb.appendLine("The 'x1' parameter must not be null or empty");
+            }
+            else{
+                try {
+                    x1 = Double.parseDouble(x1Text);
+                    if(x1 < 0){
+                        sb.appendLine("The 'x1' can't be negative");
+                    }
+                }
+                catch (NumberFormatException ex){
+                    sb.appendLine("The 'x1' parameter has wrong format");
+                }
+            }
+            if (y1Text == null || y1Text.isEmpty()) {
+                sb.appendLine("The 'y1' parameter must not be null or empty");
+            }
+            else{
+                try {
+                    y1 = Double.parseDouble(y1Text);
+                    if(y1 < 0){
+                        sb.appendLine("The 'y1' can't be negative");
+                    }
+                }
+                catch (NumberFormatException ex){
+                    sb.appendLine("The 'y1' parameter has wrong format");
+                }
+            }
+            if (x2Text == null || x2Text.isEmpty()) {
+                sb.appendLine("The 'x2' parameter must not be null or empty");
+            }
+            else{
+                try {
+                    x2 = Double.parseDouble(x2Text);
+                    if(x2 < 0){
+                        sb.appendLine("The 'x2' can't be negative");
+                    }
+                }
+                catch (NumberFormatException ex){
+                    sb.appendLine("The 'x2' parameter has wrong format");
+                }
+            }
+            if (y2Text == null || y2Text.isEmpty()) {
+                sb.appendLine("The 'y2' parameter must not be null or empty");
+            }
+            else{
+                try {
+                    y2 = Double.parseDouble(y2Text);
+                    if(y2 < 0){
+                        sb.appendLine("The 'y2' can't be negative");
+                    }
+                }
+                catch (NumberFormatException ex){
+                    sb.appendLine("The 'y2' parameter has wrong format");
+                }
+            }
+
+            if(sb.length() > 0){
+                throw new IllegalArgumentException(sb.toString());
+            }
+            else{
+                return Pair.of(new ImmutableVertex(x1,y1), new ImmutableVertex(x2,y2));
             }
         }
     }
