@@ -4,6 +4,7 @@ import org.apache.commons.lang3.Validate;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoField;
 import java.util.Comparator;
 import java.util.UUID;
@@ -18,8 +19,7 @@ public final class WidgetInternal implements Comparable<WidgetInternal>{
 
     public static final Comparator<WidgetInternal> SORT_COMPARATOR =
             Comparator.comparing((WidgetInternal widget) -> widget.getLayout().getzIndex())
-                    .thenComparing(reverseOrder(comparing(widget -> widget.getCreatedAtUtcNanoSec())))
-                    .thenComparing(widget -> widget.getGuid());
+                    .thenComparing(reverseOrder(comparing(widget -> widget.getCreatedAtUtc())));
 
     private volatile ImmutableLayout layout;
     public ImmutableLayout getLayout() {
@@ -31,14 +31,14 @@ public final class WidgetInternal implements Comparable<WidgetInternal>{
         return guid;
     }
 
-    private final long createdAtUtcNanoSec;
-    public long getCreatedAtUtcNanoSec() {
-        return createdAtUtcNanoSec;
+    private final LocalDateTime createdAtUtc;
+    public LocalDateTime getCreatedAtUtc() {
+        return createdAtUtc;
     }
 
     public WidgetInternal(UUID guid) {
         Validate.notNull(guid, "WidgetInternal guid can't be null");
-        createdAtUtcNanoSec = Instant.now(Clock.systemUTC()).getLong(ChronoField.NANO_OF_SECOND);
+        createdAtUtc = LocalDateTime.now(Clock.systemUTC());
         this.guid = guid;
     }
 
