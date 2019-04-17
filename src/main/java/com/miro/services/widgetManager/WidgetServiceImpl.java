@@ -123,13 +123,11 @@ public final class WidgetServiceImpl implements WidgetService {
 
             if(isZIndexWillChange){
                 widget = new WidgetInternal(widgetGuid);
-                widget.updateWidgetLayout(widgetLayoutInfo);
+                widget.createWidgetLayout(widgetLayoutInfo);
+                widgets.add(widget);
             }
             else
                 widget.updateWidgetLayout(widgetLayoutInfo);
-
-
-            widgets.add(widget);
 
             return;
         }
