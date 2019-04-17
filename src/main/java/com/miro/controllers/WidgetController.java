@@ -5,8 +5,10 @@ import com.miro.core.data.internal.ImmutableVertex;
 import com.miro.core.data.internal.WidgetLayoutInfo;
 import com.miro.core.exceptions.WidgetNotFoundException;
 import com.miro.core.utils.CustomStringBuilder;
-import com.miro.services.stringSerializer.JsonSerializer;
+import com.miro.services.stringSerializer.JsonSerializerImpl;
 import com.miro.services.widgetManager.WidgetServiceImpl;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -21,18 +23,18 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
-import java.util.Optional;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("api/v1/widgets")
+@Api("Widget management")
 public class WidgetController {
     private static final Logger LOGGER = LoggerFactory.getLogger(WidgetController.class);
     private final WidgetServiceImpl widgetService;
-    private final JsonSerializer jsonSerializer;
+    private final JsonSerializerImpl jsonSerializer;
     private final WidgetControllerInputParametersValidator validator = new WidgetControllerInputParametersValidator();
 
-    public WidgetController(WidgetServiceImpl widgetService, JsonSerializer jsonSerializer) {
+    public WidgetController(WidgetServiceImpl widgetService, JsonSerializerImpl jsonSerializer) {
         Validate.notNull(widgetService, "widgetService can't be null");
         Validate.notNull(jsonSerializer, "jsonSerializer can't be null");
 
@@ -42,9 +44,21 @@ public class WidgetController {
 
     @RequestMapping(value = "/add", method = RequestMethod.POST)
     @ResponseBody
-    public ResponseEntity<?> CreateWidget(HttpServletRequest request, UriComponentsBuilder componentsBuilder) {
+    @ApiOperation(value = "Create widget with specific parameters")
+    public ResponseEntity<?> CreateWidget(@RequestParam(value = "x") String xText,
+                                          @RequestParam(value = "y") String yText,
+                                          @RequestParam(value = "width") String widthText,
+                                          @RequestParam(value = "height") String heightText,
+                                          @RequestParam(value = "zIndex", required = false) String zIndexText,
+                                          HttpServletRequest request,
+                                          UriComponentsBuilder componentsBuilder) {
         try {
-            var widgetLayoutInfo = validator.ValidateAndGetWidgetLayoutParameters(request);
+            var widgetLayoutInfo = validator.ValidateAndGetWidgetLayoutParameters(xText,
+                    yText,
+                    widthText,
+                    heightText,
+                    zIndexText);
+
             var widget =  widgetService.createWidget(widgetLayoutInfo.getX(),
                     widgetLayoutInfo.getY(),
                     widgetLayoutInfo.getWidth(),
@@ -72,6 +86,7 @@ public class WidgetController {
 
     @RequestMapping(value = "/{guid}", method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get widget using GUID key")
     public ResponseEntity<?> GetWidget(@PathVariable("guid") String guidText,
                                        Model model,
                                        HttpServletRequest request) {
@@ -97,11 +112,21 @@ public class WidgetController {
 
     @RequestMapping(value = "/{guid}", method = RequestMethod.PUT)
     @ResponseBody
+    @ApiOperation(value = "Update widget layout parameters using GUID key")
     public ResponseEntity<?> UpdateWidget(@PathVariable("guid") String guidText,
-                                       HttpServletRequest request,
-                                       UriComponentsBuilder componentsBuilder){
+                                          @RequestParam(value = "x", required = false) String xText,
+                                          @RequestParam(value = "y", required = false) String yText,
+                                          @RequestParam(value = "width", required = false) String widthText,
+                                          @RequestParam(value = "height", required = false) String heightText,
+                                          @RequestParam(value = "zIndex", required = false) String zIndexText,
+                                          HttpServletRequest request,
+                                          UriComponentsBuilder componentsBuilder){
         try {
-            var widgetLayoutInfo = validator.ValidateAndGetWidgetLayoutParameters(request);
+            var widgetLayoutInfo = validator.ValidateAndGetWidgetLayoutParameters(xText,
+                    yText,
+                    widthText,
+                    heightText,
+                    zIndexText);
             var guid = validator.ValidateAndGetGuidInputParameter(guidText);
             widgetService.updateWidget(guid, widgetLayoutInfo);
 
@@ -125,6 +150,7 @@ public class WidgetController {
 
     @RequestMapping(value = "/", method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get all widget guid's sorted by zIndex")
     public ResponseEntity<?> GetWidgets(HttpServletRequest request){
         try {
             var allWidgets = widgetService.getAllWidgets();
@@ -147,13 +173,14 @@ public class WidgetController {
 
     @RequestMapping(value = "/limit", method = RequestMethod.GET)
     @ResponseBody
+    @ApiOperation(value = "Get widgets using pagination(limit and offset)")
     public ResponseEntity<?> Pagination(@RequestParam(value = "limit", required = false) String limitText,
                                         @RequestParam(value = "offset", required = false) String offsetText,
                                         HttpServletRequest request){
         try {
             var parametersPair = validator.ValidateAndGetPaginationInputParameter(limitText, offsetText);
             var widgets = widgetService.getWidgets(parametersPair.getKey(), parametersPair.getValue());
-            return getResponseEntity(widgets);
+            return getResponseEntityForWidgetArray(widgets);
         }
         catch (IllegalArgumentException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -165,7 +192,8 @@ public class WidgetController {
     }
     @RequestMapping(value = "/filter", method = RequestMethod.GET)
     @ResponseBody
-    public ResponseEntity<?> Pagination(@RequestParam(value = "x1") String x1Text,
+    @ApiOperation(value = "Get widgets filtered by intersect specific area")
+    public ResponseEntity<?> Filtration(@RequestParam(value = "x1") String x1Text,
                                         @RequestParam(value = "x2") String x2Text,
                                         @RequestParam(value = "y1") String y1Text,
                                         @RequestParam(value = "y2") String y2Text,
@@ -178,7 +206,7 @@ public class WidgetController {
             var y2 = vertexParametersPair.getValue().getY();
 
             var widgets = widgetService.filterAndGetWidgets(x1, x2, y1, y2);
-            return getResponseEntity(widgets);
+            return getResponseEntityForWidgetArray(widgets);
         }
         catch (IllegalArgumentException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -189,20 +217,9 @@ public class WidgetController {
         }
     }
 
-    private ResponseEntity<?> getResponseEntity(Widget[] widgets) {
-        if(widgets.length > 0){
-            HttpHeaders responseHeaders = new HttpHeaders();
-            responseHeaders.setContentType(MediaType.APPLICATION_JSON);
-            responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-            return  new ResponseEntity<>(jsonSerializer.serialize(widgets),responseHeaders, HttpStatus.OK);
-        }
-
-        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-    }
-
-
     @RequestMapping(value = "/{guid}", method = RequestMethod.DELETE)
     @ResponseBody
+    @ApiOperation(value = "Delete widget using GUID key")
     public ResponseEntity<?> DeleteWidget(@PathVariable("guid") String guidText,
                                                HttpServletRequest request){
         try {
@@ -222,17 +239,23 @@ public class WidgetController {
         }
     }
 
+    private ResponseEntity<?> getResponseEntityForWidgetArray(Widget[] widgets) {
+        if(widgets.length > 0){
+            HttpHeaders responseHeaders = new HttpHeaders();
+            responseHeaders.setContentType(MediaType.APPLICATION_JSON);
+            responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
+            return  new ResponseEntity<>(jsonSerializer.serialize(widgets),responseHeaders, HttpStatus.OK);
+        }
+
+        return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+
     private final class WidgetControllerInputParametersValidator {
 
-        public WidgetLayoutInfo ValidateAndGetWidgetLayoutParameters(HttpServletRequest request){
+        public WidgetLayoutInfo ValidateAndGetWidgetLayoutParameters(String xText, String yText, String widthText, String heightText, String zIndexText){
 
             var sb = new CustomStringBuilder();
-
-            var widthText = request.getParameter("width");
-            var heightText = request.getParameter("height");
-            var xText = request.getParameter("x");
-            var yText = request.getParameter("y");
-            var zIndexText = request.getParameter("zIndex");
 
             double width = 0.0d;
             double height =0.0d;

@@ -6,11 +6,11 @@ import com.miro.core.Widget;
 import org.springframework.stereotype.Service;
 
 @Service
-public class JsonSerializer implements StringSerializer {
+public class JsonSerializerImpl implements StringSerializer {
 
     private final Gson gson = new GsonBuilder().setPrettyPrinting().create();
 
-    public JsonSerializer() {
+    public JsonSerializerImpl() {
     }
 
     @Override
