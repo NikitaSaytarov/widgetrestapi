@@ -2,7 +2,7 @@ package com.miro.services.stringSerializer;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.miro.core.Widget;
+import com.miro.core.dto.WidgetDto;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -20,7 +20,7 @@ public class JsonSerializerImpl implements StringSerializer {
 
     @Override
     public <T> T deserialize(String objectString) {
-        Widget widget = gson.fromJson(objectString, Widget.class);
-        return (T) widget;
+        WidgetDto widgetDto = gson.fromJson(objectString, WidgetDto.class);
+        return (T) widgetDto;
     }
 }

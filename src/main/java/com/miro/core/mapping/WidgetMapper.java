@@ -1,6 +1,6 @@
 package com.miro.core.mapping;
 
-import com.miro.core.Widget;
+import com.miro.core.dto.WidgetDto;
 import com.miro.core.data.internal.WidgetInternal;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
@@ -10,10 +10,10 @@ public interface WidgetMapper {
 
     WidgetMapper INSTANCE = Mappers.getMapper( WidgetMapper.class );
 
-    Widget[] mapArray(WidgetInternal[] widgetsInternal);
+    WidgetDto[] mapArray(WidgetInternal[] widgetsInternal);
 
-    default Widget map(WidgetInternal widgetInternal) {
-        var widget = new Widget();
+    default WidgetDto map(WidgetInternal widgetInternal) {
+        var widget = new WidgetDto();
         widget.setX(widgetInternal.getLayout().getVertex().getX());
         widget.setY(widgetInternal.getLayout().getVertex().getY());
         widget.setWidth(widgetInternal.getLayout().getSize().getWidth());

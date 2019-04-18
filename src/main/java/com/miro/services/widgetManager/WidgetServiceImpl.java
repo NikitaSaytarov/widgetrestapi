@@ -1,6 +1,6 @@
 package com.miro.services.widgetManager;
 
-import com.miro.core.Widget;
+import com.miro.core.dto.WidgetDto;
 import com.miro.core.data.internal.WidgetInternal;
 import com.miro.core.data.internal.WidgetLayoutInfo;
 import com.miro.core.exceptions.WidgetNotFoundException;
@@ -32,11 +32,11 @@ public final class WidgetServiceImpl implements WidgetService {
      * @param width widget width
      * @param height widget height
      * @param zIndex widget zIndex. zIndex can be null
-     * @return [Widget] object
+     * @return [WidgetDto] object
      * @throws IllegalArgumentException if the input parameters are wrong
      */
     @Override
-    public Widget createWidget(double x, double y, double width, double height, Integer zIndex) {
+    public WidgetDto createWidget(double x, double y, double width, double height, Integer zIndex) {
 
         Validate.finite(x, "X can't be infinite");
         Validate.finite(y, "Y can't be infinite");
@@ -103,12 +103,12 @@ public final class WidgetServiceImpl implements WidgetService {
     /**
      * Get widget with a specific guid
      * @param widgetGuid widget guid
-     * @return [Widget] object
+     * @return [WidgetDto] object
      * @throws NullPointerException if the widgetGuid or widgetLayoutInfo is null
      * @throws WidgetNotFoundException if widget not found
      */
     @Override
-    public Widget getWidget(UUID widgetGuid) throws WidgetNotFoundException {
+    public WidgetDto getWidget(UUID widgetGuid) throws WidgetNotFoundException {
 
         Optional<WidgetInternal> widgetAvailability;
         locker.readLock().lock();
@@ -202,10 +202,10 @@ public final class WidgetServiceImpl implements WidgetService {
 
     /**
      * Get all widgets sorted by zIndex
-     * @return [Widget]'s array
+     * @return [WidgetDto]'s array
      */
     @Override
-    public Widget[] getAllWidgets() {
+    public WidgetDto[] getAllWidgets() {
 
         WidgetInternal[] widgetsRaw;
         locker.readLock().lock();
@@ -219,17 +219,17 @@ public final class WidgetServiceImpl implements WidgetService {
         if(widgetsRaw.length > 0){
             return widgetMapper.mapArray(widgetsRaw);
         }
-        return new Widget[0];
+        return new WidgetDto[0];
     }
 
     /**
      * Get widgets sorted by zIndex with limit and offset
      * @param limit limit
      * @param offset offset
-     * @return [Widget]'s array
+     * @return [WidgetDto]'s array
      */
     @Override
-    public Widget[] getWidgets(int limit, int offset) {
+    public WidgetDto[] getWidgets(int limit, int offset) {
         Validate.isTrue(limit >= 0, "limit can't be negative");
         Validate.isTrue(offset >= 0, "offset can't be negative");
 
@@ -250,11 +250,11 @@ public final class WidgetServiceImpl implements WidgetService {
         if(setOfWidgetsRaw.length > 0){
             return widgetMapper.mapArray(setOfWidgetsRaw);
         }
-        return new Widget[0];
+        return new WidgetDto[0];
     }
 
     @Override
-    public Widget[] filterAndGetWidgets(double x1, double x2, double y1, double y2) {
+    public WidgetDto[] filterAndGetWidgets(double x1, double x2, double y1, double y2) {
         Validate.isTrue(x1 >= 0, "x1 can't be negative");
         Validate.isTrue(y1 >= 0, "y1 can't be negative");
         Validate.isTrue(x2 >= 0, "x2 can't be negative");
@@ -281,7 +281,7 @@ public final class WidgetServiceImpl implements WidgetService {
         if(setOfWidgetsRaw.length > 0){
             return widgetMapper.mapArray(setOfWidgetsRaw);
         }
-        return new Widget[0];
+        return new WidgetDto[0];
     }
 
     private boolean isOverlappingPredicate(Rectangle2D widgetRectangle, Rectangle2D area) {

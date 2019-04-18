@@ -1,6 +1,6 @@
 package com.miro.controllers;
 
-import com.miro.core.Widget;
+import com.miro.core.dto.WidgetDto;
 import com.miro.core.data.internal.ImmutableVertex;
 import com.miro.core.data.internal.WidgetLayoutInfo;
 import com.miro.core.exceptions.WidgetNotFoundException;
@@ -9,6 +9,8 @@ import com.miro.services.stringSerializer.JsonSerializerImpl;
 import com.miro.services.widgetManager.WidgetServiceImpl;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiResponse;
+import io.swagger.annotations.ApiResponses;
 import org.apache.commons.lang3.Validate;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -27,7 +29,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("api/v1/widgets")
-@Api("Widget management")
+@Api("WidgetDto management")
 public class WidgetController {
     private static final Logger LOGGER = LoggerFactory.getLogger(WidgetController.class);
     private final WidgetServiceImpl widgetService;
@@ -45,6 +47,10 @@ public class WidgetController {
     @RequestMapping(value = "/add", method = RequestMethod.POST)
     @ResponseBody
     @ApiOperation(value = "Create widget with specific parameters")
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Successful widget create", response = WidgetDto.class),
+            @ApiResponse(code = 400, message = "Invalid input parameters"),
+            @ApiResponse(code = 500, message = "Internal server error")})
     public ResponseEntity<?> CreateWidget(@RequestParam(value = "x") String xText,
                                           @RequestParam(value = "y") String yText,
                                           @RequestParam(value = "width") String widthText,
@@ -73,7 +79,7 @@ public class WidgetController {
 
             return ResponseEntity.created(uriComponents.toUri())
                     .headers(responseHeaders)
-                    .body(jsonSerializer.serialize(widget));
+                    .body(widget);
         }
         catch (IllegalArgumentException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -87,8 +93,12 @@ public class WidgetController {
     @RequestMapping(value = "/{guid}", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(value = "Get widget using GUID key")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful retrieval of widget", response = WidgetDto.class),
+            @ApiResponse(code = 404, message = "Widget with given GUID does not found"),
+            @ApiResponse(code = 400, message = "Invalid input parameters"),
+            @ApiResponse(code = 500, message = "Internal server error")})
     public ResponseEntity<?> GetWidget(@PathVariable("guid") String guidText,
-                                       Model model,
                                        HttpServletRequest request) {
         try {
             var guid = validator.ValidateAndGetGuidInputParameter(guidText);
@@ -97,9 +107,9 @@ public class WidgetController {
             HttpHeaders responseHeaders = new HttpHeaders();
             responseHeaders.setContentType(MediaType.APPLICATION_JSON);
             responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-            return  new ResponseEntity<>(jsonSerializer.serialize(widget),responseHeaders,HttpStatus.OK);
+            return new ResponseEntity<>(widget, responseHeaders, HttpStatus.OK);
         } catch (WidgetNotFoundException e) {
-            return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         catch (IllegalArgumentException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -113,6 +123,11 @@ public class WidgetController {
     @RequestMapping(value = "/{guid}", method = RequestMethod.PUT)
     @ResponseBody
     @ApiOperation(value = "Update widget layout parameters using GUID key")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful widget update"),
+            @ApiResponse(code = 400, message = "Invalid input parameters"),
+            @ApiResponse(code = 404, message = "Widget with given GUID does not found"),
+            @ApiResponse(code = 500, message = "Internal server error")})
     public ResponseEntity<?> UpdateWidget(@PathVariable("guid") String guidText,
                                           @RequestParam(value = "x", required = false) String xText,
                                           @RequestParam(value = "y", required = false) String yText,
@@ -137,7 +152,7 @@ public class WidgetController {
             return new ResponseEntity(responseHeaders, HttpStatus.OK);
         }
         catch (WidgetNotFoundException e) {
-            return new ResponseEntity<>("Widget not found",HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>("WidgetDto not found",HttpStatus.NOT_FOUND);
         }
         catch (IllegalArgumentException e){
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -151,16 +166,18 @@ public class WidgetController {
     @RequestMapping(value = "/", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(value = "Get all widget guid's sorted by zIndex")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Getting all available widget identifiers sorted by index", response = UUID.class, responseContainer="Array"),
+            @ApiResponse(code = 500, message = "Internal server error")})
     public ResponseEntity<?> GetWidgets(HttpServletRequest request){
         try {
             var allWidgets = widgetService.getAllWidgets();
             if(allWidgets.length > 0){
-                //var widgetsGuid = Arrays.stream(allWidgets).map(w -> w.getGuid()).toArray();
-
+                var widgetsGuid = Arrays.stream(allWidgets).map(w -> w.getGuid()).toArray();
                 HttpHeaders responseHeaders = new HttpHeaders();
                 responseHeaders.setContentType(MediaType.APPLICATION_JSON);
                 responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-                return  new ResponseEntity<>(jsonSerializer.serialize(allWidgets),responseHeaders,HttpStatus.OK);
+                return  new ResponseEntity<>(widgetsGuid, responseHeaders,HttpStatus.OK);
             }
 
             return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -174,6 +191,10 @@ public class WidgetController {
     @RequestMapping(value = "/limit", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(value = "Get widgets using pagination(limit and offset)")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Getting range widgets sorted by index", response = WidgetDto.class, responseContainer="Array"),
+            @ApiResponse(code = 400, message = "Invalid input parameters"),
+            @ApiResponse(code = 500, message = "Internal server error")})
     public ResponseEntity<?> Pagination(@RequestParam(value = "limit", required = false) String limitText,
                                         @RequestParam(value = "offset", required = false) String offsetText,
                                         HttpServletRequest request){
@@ -193,6 +214,10 @@ public class WidgetController {
     @RequestMapping(value = "/filter", method = RequestMethod.GET)
     @ResponseBody
     @ApiOperation(value = "Get widgets filtered by intersect specific area")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Getting filtered widgets sorted by index", response = WidgetDto.class, responseContainer="Array"),
+            @ApiResponse(code = 400, message = "Invalid input parameters"),
+            @ApiResponse(code = 500, message = "Internal server error")})
     public ResponseEntity<?> Filtration(@RequestParam(value = "x1") String x1Text,
                                         @RequestParam(value = "x2") String x2Text,
                                         @RequestParam(value = "y1") String y1Text,
@@ -220,6 +245,11 @@ public class WidgetController {
     @RequestMapping(value = "/{guid}", method = RequestMethod.DELETE)
     @ResponseBody
     @ApiOperation(value = "Delete widget using GUID key")
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successful widget delete"),
+            @ApiResponse(code = 400, message = "Invalid input parameters"),
+            @ApiResponse(code = 404, message = "Widget with given GUID does not found"),
+            @ApiResponse(code = 500, message = "Internal server error")})
     public ResponseEntity<?> DeleteWidget(@PathVariable("guid") String guidText,
                                                HttpServletRequest request){
         try {
@@ -239,12 +269,12 @@ public class WidgetController {
         }
     }
 
-    private ResponseEntity<?> getResponseEntityForWidgetArray(Widget[] widgets) {
+    private ResponseEntity<?> getResponseEntityForWidgetArray(WidgetDto[] widgets) {
         if(widgets.length > 0){
             HttpHeaders responseHeaders = new HttpHeaders();
             responseHeaders.setContentType(MediaType.APPLICATION_JSON);
             responseHeaders.setAccept(Arrays.asList(MediaType.APPLICATION_JSON));
-            return  new ResponseEntity<>(jsonSerializer.serialize(widgets),responseHeaders, HttpStatus.OK);
+            return  new ResponseEntity<>(widgets,responseHeaders, HttpStatus.OK);
         }
 
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
