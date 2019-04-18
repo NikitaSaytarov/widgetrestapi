@@ -167,7 +167,7 @@ public class WidgetController {
     @ResponseBody
     @ApiOperation(value = "Get all widget guid's sorted by zIndex")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Getting all available widget identifiers sorted by index", response = UUID.class, responseContainer="Array"),
+            @ApiResponse(code = 200, message = "Getting all available widget identifiers sorted by index", response = UUID.class, responseContainer = "List" ),
             @ApiResponse(code = 500, message = "Internal server error")})
     public ResponseEntity<?> GetWidgets(HttpServletRequest request){
         try {
@@ -192,7 +192,7 @@ public class WidgetController {
     @ResponseBody
     @ApiOperation(value = "Get widgets using pagination(limit and offset)")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Getting range widgets sorted by index", response = WidgetDto.class, responseContainer="Array"),
+            @ApiResponse(code = 200, message = "Getting range widgets sorted by index", response = WidgetDto.class,  responseContainer = "List"),
             @ApiResponse(code = 400, message = "Invalid input parameters"),
             @ApiResponse(code = 500, message = "Internal server error")})
     public ResponseEntity<?> Pagination(@RequestParam(value = "limit", required = false) String limitText,
@@ -215,7 +215,7 @@ public class WidgetController {
     @ResponseBody
     @ApiOperation(value = "Get widgets filtered by intersect specific area")
     @ApiResponses(value = {
-            @ApiResponse(code = 200, message = "Getting filtered widgets sorted by index", response = WidgetDto.class, responseContainer="Array"),
+            @ApiResponse(code = 200, message = "Getting filtered widgets sorted by index", response = WidgetDto.class,  responseContainer = "List"),
             @ApiResponse(code = 400, message = "Invalid input parameters"),
             @ApiResponse(code = 500, message = "Internal server error")})
     public ResponseEntity<?> Filtration(@RequestParam(value = "x1") String x1Text,
