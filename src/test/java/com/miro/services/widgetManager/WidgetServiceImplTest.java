@@ -1,29 +1,31 @@
 package com.miro.services.widgetManager;
 
-import com.nitorcreations.junit.runners.NestedRunner;
-import org.junit.experimental.runners.Enclosed;
-import org.junit.experimental.theories.Theory;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.junit.experimental.categories.Category;
+import org.junit.experimental.theories.DataPoint;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
+import org.junit.runners.model.InitializationError;
+import org.junit.runners.model.RunnerBuilder;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
-
-
-public class WidgetServiceImplTest
+@RunWith(WidgetServiceImplTest.class)
+@Suite.SuiteClasses({ WidgetServiceImplTest.createWidget.class })
+public class WidgetServiceImplTest  extends Suite
 {
-    @Nested
-    @Category(WidgetServiceImplTest.class)
-    public class createWidget{
+    public WidgetServiceImplTest(Class<?> klass, RunnerBuilder builder) throws InitializationError {
+        super(klass, builder);
+    }
 
-        @Theory
-        public void should_throw_illegal_argument_exception_when_pass_invalid_parameters()
-        {
-            //Arrange
-            //Act
-            //Assert
-        }
+    @RunWith(Theories.class)
+    @Category(WidgetServiceImplTest.class)
+    public static class createWidget{
+        //@Theory
+        //public void should_throw_illegal_argument_exception_when_pass_invalid_parameters()
+        //{
+        //    //Arrange
+        //    //Act
+        //    //Assert
+        //}
     }
 }
