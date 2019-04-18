@@ -15,15 +15,15 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+
 @Service
 public final class WidgetServiceImpl implements WidgetService {
 
     private static final ReadWriteLock locker = new ReentrantReadWriteLock();
     private static final ConcurrentSkipListSet<WidgetInternal> widgets = new ConcurrentSkipListSet<>(WidgetInternal.SORT_COMPARATOR);
-    private final WidgetMapper widgetMapper ;
+    private final WidgetMapper widgetMapper = WidgetMapper.INSTANCE;
 
     public WidgetServiceImpl() {
-        widgetMapper= WidgetMapper.INSTANCE;
     }
     /**
      * Create widget
