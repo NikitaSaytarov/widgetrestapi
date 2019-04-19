@@ -1,11 +1,8 @@
 package com.miro.services.widgetManager;
 
-import com.miro.core.data.internal.WidgetInternal;
 import com.miro.core.data.internal.WidgetLayoutInfo;
 import com.miro.core.dto.WidgetDto;
 import com.miro.core.exceptions.WidgetNotFoundException;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.experimental.theories.*;
@@ -31,7 +28,8 @@ import static org.springframework.test.util.AssertionErrors.assertTrue;
 @Suite.SuiteClasses({ WidgetServiceImplTest.createWidget.class,
         WidgetServiceImplTest.updateWidget.class,
         WidgetServiceImplTest.getWidget.class,
-        WidgetServiceImplTest.getAllWidgets.class })
+        WidgetServiceImplTest.getAllWidgets.class,
+        WidgetServiceImplTest.removeWidget.class })
 public class WidgetServiceImplTest  extends Suite
 {
     public static class TheoryParametersFixture{
@@ -610,13 +608,12 @@ public class WidgetServiceImplTest  extends Suite
         }
     }
 
-
     @RunWith(Theories.class)
     @Category(WidgetServiceImplTest.class)
     public static class getAllWidgets{
 
         @Test
-        public void should_return_all_widgets_sorted_by_zIndex() {
+        public void should_return_all_widgets_sorted_by_zIndex_when_call_method() {
 
             //Arrange
             var sut = new WidgetServiceImpl();
@@ -642,6 +639,51 @@ public class WidgetServiceImplTest  extends Suite
                 assertTrue("Error", widget.getzIndex() >  lastZIndex);
                 lastZIndex = widget.getzIndex();
             }
+        }
+    }
+
+    @RunWith(Theories.class)
+    @Category(WidgetServiceImplTest.class)
+    public static class removeWidget{
+
+        @Test
+        public void should_throw_widget_not_found_exception_when_pass_invalid_guid() {
+
+            //Arrange
+            var sut = new WidgetServiceImpl();
+
+            var validX = 1d;
+            var validY = 1d;
+            var validWidth = 1d;
+            var validHeight = 1d;
+            sut.createWidget(validX,validY,validWidth,validHeight, 1);
+            sut.createWidget(validX,validY,validWidth,validHeight, 300);
+
+            //Act
+            //Assert
+            assertThatExceptionOfType(WidgetNotFoundException.class).isThrownBy(() -> { sut.removeWidget(UUID.randomUUID());});
+        }
+
+        @Test
+        public void should_successful_remove_widget_when_call_mehod() {
+
+            //Arrange
+            var sut = new WidgetServiceImpl();
+
+            var validX = 1d;
+            var validY = 1d;
+            var validWidth = 1d;
+            var validHeight = 1d;
+            sut.createWidget(validX,validY,validWidth,validHeight, 1);
+            var widget = sut.createWidget(validX,validY,validWidth,validHeight, 300);
+            var guid = widget.getGuid();
+
+            //Act
+            //Assert
+            assertThatCode(() -> {
+                sut.removeWidget(guid);
+                assertThatExceptionOfType(WidgetNotFoundException.class).isThrownBy(() -> { sut.getWidget(guid);});
+            }).doesNotThrowAnyException();
         }
     }
 }
