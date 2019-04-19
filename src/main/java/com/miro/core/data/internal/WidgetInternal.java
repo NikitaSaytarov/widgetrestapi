@@ -27,14 +27,8 @@ public final class WidgetInternal implements Comparable<WidgetInternal>{
         return guid;
     }
 
-    private final LocalDateTime createdAtUtc;
-    public LocalDateTime getCreatedAtUtc() {
-        return createdAtUtc;
-    }
-
     public WidgetInternal(UUID guid) {
         Validate.notNull(guid, "WidgetInternal guid can't be null");
-        createdAtUtc = LocalDateTime.now(Clock.systemUTC());
         this.guid = guid;
     }
 
