@@ -15,7 +15,7 @@ public final class WidgetInternal implements Comparable<WidgetInternal>{
 
     public static final Comparator<WidgetInternal> SORT_COMPARATOR =
             Comparator.comparing((WidgetInternal widget) -> widget.getLayout().getzIndex())
-                    .thenComparing(reverseOrder(comparing(widget -> widget.getCreatedAtUtc())));
+            .thenComparing(w -> w.getGuid());
 
     private volatile ImmutableLayout layout;
     public ImmutableLayout getLayout() {

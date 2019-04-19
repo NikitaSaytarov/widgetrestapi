@@ -19,8 +19,8 @@ import java.util.stream.Collectors;
 @Service
 public final class WidgetServiceImpl implements WidgetService {
 
-    private static final ReadWriteLock locker = new ReentrantReadWriteLock();
-    private static final ConcurrentSkipListSet<WidgetInternal> widgets = new ConcurrentSkipListSet<>(WidgetInternal.SORT_COMPARATOR);
+    private final ReadWriteLock locker = new ReentrantReadWriteLock();
+    private final ConcurrentSkipListSet<WidgetInternal> widgets = new ConcurrentSkipListSet<>(WidgetInternal.SORT_COMPARATOR);
     private final WidgetMapper widgetMapper = WidgetMapper.INSTANCE;
 
     public WidgetServiceImpl() {
@@ -50,6 +50,8 @@ public final class WidgetServiceImpl implements WidgetService {
 
         Validate.isTrue(width > 0, "Width can't be less than zero");
         Validate.isTrue(height > 0, "Height can't be less than zero");
+        Validate.isTrue(x >= 0, "x can't be less than zero");
+        Validate.isTrue(y >= 0, "y can't be less than zero");
 
         if(zIndex != null)
             Validate.isTrue(zIndex >= 0, "Invalid value for zIndex");
