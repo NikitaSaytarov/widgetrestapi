@@ -28,7 +28,10 @@ import static org.junit.Assume.assumeThat;
 import static org.springframework.test.util.AssertionErrors.assertTrue;
 
 @RunWith(WidgetServiceImplTest.class)
-@Suite.SuiteClasses({ WidgetServiceImplTest.createWidget.class, WidgetServiceImplTest.updateWidget.class, WidgetServiceImplTest.getWidget.class })
+@Suite.SuiteClasses({ WidgetServiceImplTest.createWidget.class,
+        WidgetServiceImplTest.updateWidget.class,
+        WidgetServiceImplTest.getWidget.class,
+        WidgetServiceImplTest.getAllWidgets.class })
 public class WidgetServiceImplTest  extends Suite
 {
     public static class TheoryParametersFixture{
@@ -604,6 +607,41 @@ public class WidgetServiceImplTest  extends Suite
                 assertTrue("Error, zIndex wrong ", widgetDto.getUpdatedAtUtc().isAfter(updatedAtUtc));
 
             }).doesNotThrowAnyException();
+        }
+    }
+
+
+    @RunWith(Theories.class)
+    @Category(WidgetServiceImplTest.class)
+    public static class getAllWidgets{
+
+        @Test
+        public void should_return_all_widgets_sorted_by_zIndex() {
+
+            //Arrange
+            var sut = new WidgetServiceImpl();
+
+            var validX = 1d;
+            var validY = 1d;
+            var validWidth = 1d;
+            var validHeight = 1d;
+            sut.createWidget(validX,validY,validWidth,validHeight, 1);
+            sut.createWidget(validX,validY,validWidth,validHeight, 300);
+            sut.createWidget(validX,validY,validWidth,validHeight, 2);
+            sut.createWidget(validX,validY,validWidth,validHeight, 6);
+            sut.createWidget(validX,validY,validWidth,validHeight, 300);
+            sut.createWidget(validX,validY,validWidth,validHeight, 0);
+            sut.createWidget(validX,validY,validWidth,validHeight, 1);
+
+            //Act
+            var widgets = sut.getAllWidgets();
+
+            Integer lastZIndex = -1;
+            for (var widget : widgets){
+                //Assert
+                assertTrue("Error", widget.getzIndex() >  lastZIndex);
+                lastZIndex = widget.getzIndex();
+            }
         }
     }
 }
