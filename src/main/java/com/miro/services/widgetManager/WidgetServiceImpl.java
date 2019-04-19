@@ -170,8 +170,11 @@ public final class WidgetServiceImpl implements WidgetService {
                     if(!removeResult) {
                         throw new WidgetNotFoundException();
                     };
+
                     var updatedWidget = new WidgetInternal(widgetGuid);
-                    updatedWidget.createWidgetLayout(widgetLayoutInfo);
+                    var widgetLayout = ConstructWidgetLayoutByExistingValues(widgetLayoutInfo, widget);
+                    updatedWidget.createWidgetLayout(widgetLayout);
+
                     var widgetWithSameIndex = widgets.stream()
                             .filter(w -> w.getLayout().getzIndex() == updatedWidget.getLayout().getzIndex())
                             .findFirst();
@@ -188,6 +191,21 @@ public final class WidgetServiceImpl implements WidgetService {
             return;
         }
         throw new WidgetNotFoundException();
+    }
+
+    private WidgetLayoutInfo ConstructWidgetLayoutByExistingValues(WidgetLayoutInfo widgetLayoutInfoFromUser, WidgetInternal updatedWidget) {
+
+        updatedWidget.updateWidgetLayout(widgetLayoutInfoFromUser);
+        var widgetLayout = new WidgetLayoutInfo();
+        var layout = updatedWidget.getLayout();
+
+        widgetLayout.setX(layout.getVertex().getX());
+        widgetLayout.setY(layout.getVertex().getY());
+        widgetLayout.setWidth(layout.getSize().getWidth());
+        widgetLayout.setHeight(layout.getSize().getHeight());
+        widgetLayout.setzIndex(layout.getzIndex());
+
+        return widgetLayout;
     }
 
     private void shiftTailWidgets(WidgetInternal widget) {

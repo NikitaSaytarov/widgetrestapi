@@ -1,8 +1,11 @@
 package com.miro.services.widgetManager;
 
 import com.miro.core.data.internal.WidgetInternal;
+import com.miro.core.data.internal.WidgetLayoutInfo;
 import com.miro.core.dto.WidgetDto;
 import com.miro.core.exceptions.WidgetNotFoundException;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.experimental.theories.*;
@@ -14,8 +17,7 @@ import org.junit.runners.model.RunnerBuilder;
 import java.util.Arrays;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.assertj.core.api.Java6Assertions.assertThatCode;
 import static org.hamcrest.Matchers.*;
@@ -25,17 +27,10 @@ import static org.junit.Assume.assumeThat;
 import static org.springframework.test.util.AssertionErrors.assertTrue;
 
 @RunWith(WidgetServiceImplTest.class)
-@Suite.SuiteClasses({ WidgetServiceImplTest.createWidget.class })
+@Suite.SuiteClasses({ WidgetServiceImplTest.createWidget.class, WidgetServiceImplTest.updateWidget.class, WidgetServiceImplTest.getWidget.class })
 public class WidgetServiceImplTest  extends Suite
 {
-    public WidgetServiceImplTest(Class<?> klass, RunnerBuilder builder) throws InitializationError {
-        super(klass, builder);
-    }
-
-    @RunWith(Theories.class)
-    @Category(WidgetServiceImplTest.class)
-    public static class createWidget{
-
+    public static class TheoryParametersFixture{
         @DataPoints("InputParametersSet1")
         public static Double[] InputParametersSet1() {
             Double [] doubles = {null, Double.NaN, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY , -5d, -200d, 0d, 300d, 1d};
@@ -56,6 +51,30 @@ public class WidgetServiceImplTest  extends Suite
             System.out.println("Generated test data: "
                     + Arrays.toString(doubles));
             return doubles;
+        }
+    }
+
+    private TheoryParametersFixture theoryParametersFixture;
+
+    public WidgetServiceImplTest(Class<?> klass, RunnerBuilder builder) throws InitializationError {
+        super(klass, builder);
+    }
+
+    @RunWith(Theories.class)
+    @Category(WidgetServiceImplTest.class)
+    public static class createWidget{
+
+        @DataPoints("InputParametersSet1")
+        public static Double[] InputParametersSet1() {
+            return WidgetServiceImplTest.TheoryParametersFixture.InputParametersSet1();
+        }
+        @DataPoints("InputParametersSet2")
+        public static Integer[] InputParametersSet2() {
+            return WidgetServiceImplTest.TheoryParametersFixture.InputParametersSet2();
+        }
+        @DataPoints("InputParametersSet3")
+        public static Double[] InputParametersSet3() {
+            return WidgetServiceImplTest.TheoryParametersFixture.InputParametersSet3();
         }
 
         @Theory
@@ -211,7 +230,7 @@ public class WidgetServiceImplTest  extends Suite
             }).doesNotThrowAnyException();
         }
         @Test
-        public void should_throw_illegal_argument_exception_when_try_get_widget_with_no_exist_guid() {
+        public void should_throw_widget_not_found_exception_when_try_get_widget_with_no_exist_guid() {
 
             //Arrange
             var sut = new WidgetServiceImpl();
@@ -229,6 +248,206 @@ public class WidgetServiceImplTest  extends Suite
             //Act
             //Assert
             assertThatExceptionOfType(WidgetNotFoundException.class).isThrownBy(() -> { sut.getWidget(UUID.randomUUID());});
+        }
+    }
+
+    @RunWith(Theories.class)
+    @Category(WidgetServiceImplTest.class)
+    public static class updateWidget{
+
+        @DataPoints("InputParametersSet1")
+        public static Double[] InputParametersSet1() {
+            return WidgetServiceImplTest.TheoryParametersFixture.InputParametersSet1();
+        }
+        @DataPoints("InputParametersSet2")
+        public static Integer[] InputParametersSet2() {
+            return WidgetServiceImplTest.TheoryParametersFixture.InputParametersSet2();
+        }
+        @DataPoints("InputParametersSet3")
+        public static Double[] InputParametersSet3() {
+            return WidgetServiceImplTest.TheoryParametersFixture.InputParametersSet3();
+        }
+
+        @Test
+        public void should_throw_null_pointer_exception_when_pass_null_parameters() {
+
+            //Arrange
+            var sut = new WidgetServiceImpl();
+
+            //Act
+            //Assert
+            assertThatNullPointerException().isThrownBy(() -> { sut.updateWidget(null,null);});
+            assertThatNullPointerException().isThrownBy(() -> { sut.updateWidget(UUID.randomUUID(),null);});
+            assertThatNullPointerException().isThrownBy(() -> { sut.updateWidget(null,new WidgetLayoutInfo());});
+        }
+
+        @Test
+        public void should_throw_widget_not_found_exception_when_try_update_widget_with_no_exist_guid() {
+
+            //Arrange
+            var sut = new WidgetServiceImpl();
+
+            var validX = 1d;
+            var validY = 1d;
+            var validWidth = 1d;
+            var validHeight = 1d;
+            var firstElementZIndex = 2;
+            var lastElementZIndex = 5;
+            sut.createWidget(validX,validY,validWidth,validHeight, firstElementZIndex + 1);
+            sut.createWidget(validX,validY,validWidth,validHeight, firstElementZIndex);
+            sut.createWidget(validX,validY,validWidth,validHeight, lastElementZIndex);
+
+            var widgetLayoutInfo = new WidgetLayoutInfo();
+            widgetLayoutInfo.setzIndex(3);
+            widgetLayoutInfo.setX(3);
+            widgetLayoutInfo.setY(3);
+            widgetLayoutInfo.setWidth(3);
+            widgetLayoutInfo.setHeight(3);
+
+            //Act
+            //Assert
+            assertThatExceptionOfType(WidgetNotFoundException.class).isThrownBy(() -> { sut.updateWidget(UUID.randomUUID() ,widgetLayoutInfo);});
+        }
+
+        @Theory
+        public void should_return_successful_updated_widgetDto_when_pass_all_parameters(@FromDataPoints("InputParametersSet3") Double  xParameter,
+                                                                                              @FromDataPoints("InputParametersSet3") Double  yParameter,
+                                                                                              @FromDataPoints("InputParametersSet3") Double  widthParameter,
+                                                                                              @FromDataPoints("InputParametersSet3") Double  heightParameter,
+                                                                                              @FromDataPoints("InputParametersSet2") Integer  zIndexParameter) {
+            //Arrange
+            assumeThat(zIndexParameter,greaterThanOrEqualTo(0));
+            var sut = new WidgetServiceImpl();
+            var createdWidget  = sut.createWidget(1,1,1,1, 1);
+            var uuid = createdWidget.getGuid();
+            var newWidgetLayoutInfo = new WidgetLayoutInfo();
+            newWidgetLayoutInfo.setX(xParameter);
+            newWidgetLayoutInfo.setY(yParameter);
+            newWidgetLayoutInfo.setWidth(widthParameter);
+            newWidgetLayoutInfo.setHeight(heightParameter);
+            newWidgetLayoutInfo.setzIndex(zIndexParameter);
+
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                sut.updateWidget(uuid, newWidgetLayoutInfo);
+                var updatedWidget  = sut.getWidget(uuid);
+
+                assertEquals(updatedWidget.getX(), xParameter);
+                assertEquals(updatedWidget.getY(), yParameter);
+                assertEquals(updatedWidget.getWidth(), widthParameter);
+                assertEquals(updatedWidget.getHeight(), heightParameter);
+                assertEquals(updatedWidget.getzIndex(), zIndexParameter);
+            }).doesNotThrowAnyException();
+        }
+
+        @Theory
+        public void should_return_successful_updated_widgetDto_when_pass_not_all_parameters(@FromDataPoints("InputParametersSet3") Double  xParameter,
+                                                                                        @FromDataPoints("InputParametersSet3") Double  yParameter,
+                                                                                        @FromDataPoints("InputParametersSet3") Double  widthParameter,
+                                                                                        @FromDataPoints("InputParametersSet3") Double  heightParameter,
+                                                                                        @FromDataPoints("InputParametersSet2") Integer  zIndexParameter) {
+            //Arrange
+            assumeThat(zIndexParameter,greaterThanOrEqualTo(0));
+            var sut = new WidgetServiceImpl();
+
+            Double initialX = 1d;
+            Double initialY = 1d;
+            Double initialWidth = 1d;
+            Double initialHeight = 1d;
+
+            Integer initialZIndex1 = 1;
+            Integer initialZIndex2 = 2;
+            Integer initialZIndex3 = 3;
+            Integer initialZIndex4 = 4;
+            Integer initialZIndex5 = 5;
+
+            var createdWidget1  = sut.createWidget(initialX,initialY,initialWidth,initialHeight, initialZIndex1);
+            var createdWidget2  = sut.createWidget(initialX,initialY,initialWidth,initialHeight, initialZIndex2);
+            var createdWidget3  = sut.createWidget(initialX,initialY,initialWidth,initialHeight, initialZIndex3);
+            var createdWidget4  = sut.createWidget(initialX,initialY,initialWidth,initialHeight, initialZIndex4);
+            var createdWidget5  = sut.createWidget(initialX,initialY,initialWidth,initialHeight, initialZIndex5);
+
+            var uuid1 = createdWidget1.getGuid();
+            var uuid2 = createdWidget2.getGuid();
+            var uuid3 = createdWidget3.getGuid();
+            var uuid4 = createdWidget4.getGuid();
+            var uuid5 = createdWidget5.getGuid();
+
+            var new1 = new WidgetLayoutInfo();
+            new1.setX(xParameter);
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                sut.updateWidget(uuid1, new1);
+                var updatedWidget  = sut.getWidget(uuid1);
+
+                assertEquals(updatedWidget.getX(), xParameter);
+                assertEquals(updatedWidget.getY(), initialY);
+                assertEquals(updatedWidget.getWidth(), initialWidth);
+                assertEquals(updatedWidget.getHeight(), initialHeight);
+                assertEquals(updatedWidget.getzIndex(), initialZIndex1);
+            }).doesNotThrowAnyException();
+
+            var new2 = new WidgetLayoutInfo();
+            new2.setY(yParameter);
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                sut.updateWidget(uuid2, new2);
+                var updatedWidget  = sut.getWidget(uuid2);
+
+                assertEquals(updatedWidget.getX(), initialX);
+                assertEquals(updatedWidget.getY(), yParameter);
+                assertEquals(updatedWidget.getWidth(), initialWidth);
+                assertEquals(updatedWidget.getHeight(), initialHeight);
+                assertEquals(updatedWidget.getzIndex(), initialZIndex2);
+            }).doesNotThrowAnyException();
+
+            var new3 = new WidgetLayoutInfo();
+            new3.setWidth(widthParameter);
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                sut.updateWidget(uuid3, new3);
+                var updatedWidget  = sut.getWidget(uuid3);
+
+                assertEquals(updatedWidget.getX(), initialX);
+                assertEquals(updatedWidget.getY(), initialY);
+                assertEquals(updatedWidget.getWidth(), widthParameter);
+                assertEquals(updatedWidget.getHeight(), initialHeight);
+                assertEquals(updatedWidget.getzIndex(), initialZIndex3);
+            }).doesNotThrowAnyException();
+
+            var new4 = new WidgetLayoutInfo();
+            new4.setHeight(heightParameter);
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                sut.updateWidget(uuid4, new4);
+                var updatedWidget  = sut.getWidget(uuid4);
+
+                assertEquals(updatedWidget.getX(), initialX);
+                assertEquals(updatedWidget.getY(), initialY);
+                assertEquals(updatedWidget.getWidth(), initialWidth);
+                assertEquals(updatedWidget.getHeight(), heightParameter);
+                assertEquals(updatedWidget.getzIndex(), initialZIndex4);
+            }).doesNotThrowAnyException();
+
+            var new5 = new WidgetLayoutInfo();
+            new5.setzIndex(zIndexParameter);
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                sut.updateWidget(uuid5, new5);
+                var updatedWidget  = sut.getWidget(uuid5);
+
+                assertEquals(updatedWidget.getX(), initialX);
+                assertEquals(updatedWidget.getY(), initialY);
+                assertEquals(updatedWidget.getWidth(), initialWidth);
+                assertEquals(updatedWidget.getHeight(), initialHeight);
+                assertEquals(updatedWidget.getzIndex(), zIndexParameter);
+            }).doesNotThrowAnyException();
         }
     }
 }
