@@ -29,7 +29,8 @@ import static org.springframework.test.util.AssertionErrors.assertTrue;
         WidgetServiceImplTest.updateWidget.class,
         WidgetServiceImplTest.getWidget.class,
         WidgetServiceImplTest.getAllWidgets.class,
-        WidgetServiceImplTest.removeWidget.class })
+        WidgetServiceImplTest.removeWidget.class,
+        WidgetServiceImplTest.getWidgetsLikePagination.class})
 public class WidgetServiceImplTest  extends Suite
 {
     public static class TheoryParametersFixture{
@@ -684,6 +685,54 @@ public class WidgetServiceImplTest  extends Suite
                 sut.removeWidget(guid);
                 assertThatExceptionOfType(WidgetNotFoundException.class).isThrownBy(() -> { sut.getWidget(guid);});
             }).doesNotThrowAnyException();
+        }
+    }
+
+    @RunWith(Theories.class)
+    @Category(WidgetServiceImplTest.class)
+    public static class getWidgetsLikePagination{
+
+        @Test
+        public void should_return_all_widgets_sorted_by_zIndex_from_offset_and_limited_by_limit_parameters_when_call_method() {
+
+            //Arrange
+            var sut = new WidgetServiceImpl();
+
+            var validX = 1d;
+            var validY = 1d;
+            var validWidth = 1d;
+            var validHeight = 1d;
+            var widget1 = sut.createWidget(validX,validY,validWidth,validHeight, 1);
+            var widget2 = sut.createWidget(validX,validY,validWidth,validHeight, 2);
+            var widget3 = sut.createWidget(validX,validY,validWidth,validHeight, 3);
+            var widget4 = sut.createWidget(validX,validY,validWidth,validHeight, 4);
+            var widget5 = sut.createWidget(validX,validY,validWidth,validHeight, 5);
+            var widget6 = sut.createWidget(validX,validY,validWidth,validHeight, 6);
+
+            var offset1 = 2;
+            var limit1 = 3;
+
+            var offset2 = 0;
+            var limit2 = 6;
+
+            //Act
+            var widgets = sut.getWidgets(limit1,offset1);
+            var widgets1 = sut.getWidgets(limit2, offset2);
+
+            //Assert
+            assertTrue("Error", widgets.length == 3);
+            assertTrue("Error", widgets[0].getGuid().compareTo(widget3.getGuid()) == 0);
+            assertTrue("Error", widgets[1].getGuid().compareTo(widget4.getGuid()) == 0);
+            assertTrue("Error", widgets[2].getGuid().compareTo(widget5.getGuid()) == 0);
+
+            //Assert
+            assertTrue("Error", widgets1.length == 6);
+            assertTrue("Error", widgets1[0].getGuid().compareTo(widget1.getGuid()) == 0);
+            assertTrue("Error", widgets1[1].getGuid().compareTo(widget2.getGuid()) == 0);
+            assertTrue("Error", widgets1[2].getGuid().compareTo(widget3.getGuid()) == 0);
+            assertTrue("Error", widgets1[3].getGuid().compareTo(widget4.getGuid()) == 0);
+            assertTrue("Error", widgets1[4].getGuid().compareTo(widget5.getGuid()) == 0);
+            assertTrue("Error", widgets1[5].getGuid().compareTo(widget6.getGuid()) == 0);
         }
     }
 }
