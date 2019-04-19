@@ -275,6 +275,16 @@ public final class WidgetServiceImpl implements WidgetService {
 
     @Override
     public WidgetDto[] filterAndGetWidgets(double x1, double x2, double y1, double y2) {
+        Validate.finite(x1, "x1 can't be infinite");
+        Validate.finite(x2, "x2 can't be infinite");
+        Validate.finite(y1, "y1 can't be infinite");
+        Validate.finite(y2, "y2 can't be infinite");
+
+        Validate.notNaN(x1, "x1 can't be NaN");
+        Validate.notNaN(x2, "x2 can't be NaN");
+        Validate.notNaN(y1, "y1 can't be NaN");
+        Validate.notNaN(y2, "y2 can't be NaN");
+
         Validate.isTrue(x1 >= 0, "x1 can't be negative");
         Validate.isTrue(y1 >= 0, "y1 can't be negative");
         Validate.isTrue(x2 >= 0, "x2 can't be negative");

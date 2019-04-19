@@ -30,7 +30,8 @@ import static org.springframework.test.util.AssertionErrors.assertTrue;
         WidgetServiceImplTest.getWidget.class,
         WidgetServiceImplTest.getAllWidgets.class,
         WidgetServiceImplTest.removeWidget.class,
-        WidgetServiceImplTest.getWidgetsLikePagination.class})
+        WidgetServiceImplTest.getWidgetsLikePagination.class,
+        WidgetServiceImplTest.filterAndGetWidgets.class})
 public class WidgetServiceImplTest  extends Suite
 {
     public static class TheoryParametersFixture{
@@ -733,6 +734,64 @@ public class WidgetServiceImplTest  extends Suite
             assertTrue("Error", widgets1[3].getGuid().compareTo(widget4.getGuid()) == 0);
             assertTrue("Error", widgets1[4].getGuid().compareTo(widget5.getGuid()) == 0);
             assertTrue("Error", widgets1[5].getGuid().compareTo(widget6.getGuid()) == 0);
+        }
+    }
+
+    @RunWith(Theories.class)
+    @Category(WidgetServiceImplTest.class)
+    public static class filterAndGetWidgets{
+
+        @DataPoints("InputParametersSet1")
+        public static Double[] InputParametersSet1() {
+            return WidgetServiceImplTest.TheoryParametersFixture.InputParametersSet1();
+        }
+        @DataPoints("InputParametersSet2")
+        public static Integer[] InputParametersSet2() {
+            return WidgetServiceImplTest.TheoryParametersFixture.InputParametersSet2();
+        }
+        @DataPoints("InputParametersSet3")
+        public static Double[] InputParametersSet3() {
+            return WidgetServiceImplTest.TheoryParametersFixture.InputParametersSet3();
+        }
+
+        @Theory
+        public void should_throw_illegal_argument_exception_when_pass_invalid_area_parameters(@FromDataPoints("InputParametersSet1") Double  parameter) {
+            assumeThat(parameter,either(is(Double.NaN)).or(is(Double.NEGATIVE_INFINITY)).or(is(Double.POSITIVE_INFINITY)).or(is(lessThan(0d))).or(nullValue()));
+
+            //Arrange
+            assumeThat(parameter,either(is(Double.NaN)).or(is(Double.NEGATIVE_INFINITY)).or(is(Double.POSITIVE_INFINITY)).or(is(lessThan(0d))).or(nullValue()));
+
+            var validX1 = 1d;
+            var validY1 = 1d;
+            var validX2 = 100d;
+            var validY2 = 100d;
+            var sut = new WidgetServiceImpl();
+
+            //Act
+            //Assert
+            assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> { sut.filterAndGetWidgets(parameter, validY1, validX2, validY2);});
+            assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> { sut.filterAndGetWidgets(validX1, parameter, validX2, validY2);});
+            assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> { sut.filterAndGetWidgets(validX1, validY1, parameter, validY2);});
+            assertThatExceptionOfType(IllegalArgumentException.class).isThrownBy(() -> { sut.filterAndGetWidgets(validX1, validY1, validX2, parameter);});
+        }
+
+        @Test
+        public void should_successful_return_filtered_widgets_when_pass_intersect_area() {
+
+            //Arrange
+            var sut = new WidgetServiceImpl();
+
+            var widget1 = sut.createWidget(50,50,100,100, 1);
+            var widget2 = sut.createWidget(50,100,100,100, 2);
+            var widget3 = sut.createWidget(100,100,100,100, 3);
+
+            //Act
+            var filteredWidgets = sut.filterAndGetWidgets(0,0,100,150);
+
+            //Assert
+            assertTrue("Error", filteredWidgets.length == 2);
+            assertTrue("Error", filteredWidgets[0].getGuid().compareTo(widget1.getGuid()) == 0);
+            assertTrue("Error", filteredWidgets[1].getGuid().compareTo(widget2.getGuid()) == 0);
         }
     }
 }
