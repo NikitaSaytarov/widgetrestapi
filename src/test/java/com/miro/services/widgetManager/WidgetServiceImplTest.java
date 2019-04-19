@@ -14,6 +14,7 @@ import org.junit.runners.Suite;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -53,8 +54,6 @@ public class WidgetServiceImplTest  extends Suite
             return doubles;
         }
     }
-
-    private TheoryParametersFixture theoryParametersFixture;
 
     public WidgetServiceImplTest(Class<?> klass, RunnerBuilder builder) throws InitializationError {
         super(klass, builder);
@@ -447,6 +446,163 @@ public class WidgetServiceImplTest  extends Suite
                 assertEquals(updatedWidget.getWidth(), initialWidth);
                 assertEquals(updatedWidget.getHeight(), initialHeight);
                 assertEquals(updatedWidget.getzIndex(), zIndexParameter);
+            }).doesNotThrowAnyException();
+        }
+
+        @Test
+        public void should_shift_z_index_in_collection_when_update_widget_and_pass_existing_zIndex_parameter() {
+
+            //Arrange
+            var validX = 1d;
+            var validY = 1d;
+            var validWidth = 1d;
+            var validHeight = 1d;
+
+            var zIndex1 = 5;
+            var zIndex2 = 6;
+            var zIndex3 = 7;
+            var zIndex4 = 8;
+            var zIndex5 = 44;
+            var zIndex6 = 555;
+
+            var zIndex = 8;
+
+            var sut = new WidgetServiceImpl();
+            var widget1 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex1);
+            var widget2 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex2);
+            var widget3 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex3);
+            var widget4 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex4);
+            var widget5 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex5);
+            var widget6 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex6);
+
+            var updatedWidgetLayoutInfo = new WidgetLayoutInfo();
+            updatedWidgetLayoutInfo.setX(1);
+            updatedWidgetLayoutInfo.setY(1);
+            updatedWidgetLayoutInfo.setWidth(1);
+            updatedWidgetLayoutInfo.setHeight(1);
+            updatedWidgetLayoutInfo.setzIndex(zIndex);
+
+            assertThatCode(() -> {
+                //Act
+                sut.updateWidget(widget3.getGuid(),updatedWidgetLayoutInfo);
+
+                var widget1Dto = sut.getWidget(widget1.getGuid());
+                // Assert
+                assertTrue("Error, zIndex wrong ", widget1Dto.getzIndex() == zIndex1);
+
+                var widget2Dto = sut.getWidget(widget2.getGuid());
+                // Assert
+                assertTrue("Error, zIndex wrong ", widget2Dto.getzIndex() == zIndex2);
+
+                var widgetMainDto = sut.getWidget(widget3.getGuid());
+                // Assert
+                assertTrue("Error, zIndex wrong ", widgetMainDto.getzIndex() == zIndex);
+
+                var widget4Dto = sut.getWidget(widget4.getGuid());
+                // Assert
+                assertTrue("Error, zIndex wrong ", widget4Dto.getzIndex() == zIndex4  + 1);
+
+                var widget5Dto = sut.getWidget(widget5.getGuid());
+                // Assert
+                assertTrue("Error, zIndex wrong ", widget5Dto.getzIndex() == zIndex5  + 1);
+
+                var widget6Dto = sut.getWidget(widget6.getGuid());
+                // Assert
+                assertTrue("Error, zIndex wrong ", widget6Dto.getzIndex() == zIndex6  + 1);
+            }).doesNotThrowAnyException();
+        }
+
+        @Test
+        public void should_change_updated_at_when_update_widget() {
+
+            //Arrange
+            var validX = 1d;
+            var validY = 1d;
+            var validWidth = 1d;
+            var validHeight = 1d;
+            var zIndex = 1;
+
+            var sut = new WidgetServiceImpl();
+            var widget = sut.createWidget(validX,validY,validWidth,validHeight, zIndex);
+
+            var updatedWidgetLayoutInfo1 = new WidgetLayoutInfo();
+            updatedWidgetLayoutInfo1.setX(validX);
+            updatedWidgetLayoutInfo1.setY(validY);
+            updatedWidgetLayoutInfo1.setWidth(validWidth);
+            updatedWidgetLayoutInfo1.setHeight(validHeight);
+            updatedWidgetLayoutInfo1.setzIndex(zIndex + 1);
+
+            var updatedWidgetLayoutInfo2 = new WidgetLayoutInfo();
+            updatedWidgetLayoutInfo2.setX(validX + 1);
+            updatedWidgetLayoutInfo2.setY(validY);
+            updatedWidgetLayoutInfo2.setWidth(validWidth);
+            updatedWidgetLayoutInfo2.setHeight(validHeight);
+            updatedWidgetLayoutInfo2.setzIndex(zIndex + 1);
+
+            var updatedWidgetLayoutInfo3 = new WidgetLayoutInfo();
+            updatedWidgetLayoutInfo3.setX(validX);
+            updatedWidgetLayoutInfo3.setY(validY + 1);
+            updatedWidgetLayoutInfo3.setWidth(validWidth);
+            updatedWidgetLayoutInfo3.setHeight(validHeight);
+            updatedWidgetLayoutInfo3.setzIndex(zIndex);
+
+            var updatedWidgetLayoutInfo4 = new WidgetLayoutInfo();
+            updatedWidgetLayoutInfo4.setX(validX);
+            updatedWidgetLayoutInfo4.setY(validY);
+            updatedWidgetLayoutInfo4.setWidth(validWidth + 1);
+            updatedWidgetLayoutInfo4.setHeight(validHeight);
+            updatedWidgetLayoutInfo4.setzIndex(zIndex);
+
+            var updatedWidgetLayoutInfo5 = new WidgetLayoutInfo();
+            updatedWidgetLayoutInfo5.setX(validX);
+            updatedWidgetLayoutInfo5.setY(validY);
+            updatedWidgetLayoutInfo5.setWidth(validWidth);
+            updatedWidgetLayoutInfo5.setHeight(validHeight + 1);
+            updatedWidgetLayoutInfo5.setzIndex(zIndex);
+
+            assertThatCode(() -> {
+                WidgetDto widgetDto;
+                LocalDateTime updatedAtUtc = widget.getUpdatedAtUtc();
+
+                //Act
+                sut.updateWidget(widget.getGuid(),updatedWidgetLayoutInfo1);
+
+                // Assert
+                widgetDto = sut.getWidget(widget.getGuid());
+                assertTrue("Error, zIndex wrong ", widgetDto.getUpdatedAtUtc().isAfter(updatedAtUtc));
+
+                //Act
+                updatedAtUtc = widget.getUpdatedAtUtc();
+                sut.updateWidget(widget.getGuid(),updatedWidgetLayoutInfo2);
+
+                // Assert
+                widgetDto = sut.getWidget(widget.getGuid());
+                assertTrue("Error, zIndex wrong ", widgetDto.getUpdatedAtUtc().isAfter(updatedAtUtc));
+
+                //Act
+                updatedAtUtc = widget.getUpdatedAtUtc();
+                sut.updateWidget(widget.getGuid(),updatedWidgetLayoutInfo3);
+
+                // Assert
+                widgetDto = sut.getWidget(widget.getGuid());
+                assertTrue("Error, zIndex wrong ", widgetDto.getUpdatedAtUtc().isAfter(updatedAtUtc));
+
+                //Act
+                updatedAtUtc = widget.getUpdatedAtUtc();
+                sut.updateWidget(widget.getGuid(),updatedWidgetLayoutInfo4);
+
+                // Assert
+                widgetDto = sut.getWidget(widget.getGuid());
+                assertTrue("Error, zIndex wrong ", widgetDto.getUpdatedAtUtc().isAfter(updatedAtUtc));
+
+                //Act
+                updatedAtUtc = widget.getUpdatedAtUtc();
+                sut.updateWidget(widget.getGuid(),updatedWidgetLayoutInfo5);
+
+                // Assert
+                widgetDto = sut.getWidget(widget.getGuid());
+                assertTrue("Error, zIndex wrong ", widgetDto.getUpdatedAtUtc().isAfter(updatedAtUtc));
+
             }).doesNotThrowAnyException();
         }
     }
