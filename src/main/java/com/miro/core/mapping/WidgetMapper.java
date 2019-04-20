@@ -19,7 +19,7 @@ public interface WidgetMapper {
         widget.setWidth(widgetInternal.getLayout().getSize().getWidth());
         widget.setHeight(widgetInternal.getLayout().getSize().getHeight());
         widget.setzIndex(widgetInternal.getLayout().getzIndex());
-        widget.setUpdatedAtUtc(widgetInternal.getLayout().getUpdatedAtUtc().toLocalDateTime());
+        widget.setUpdatedAtUtc(widgetInternal.getLayout().getUpdatedAtUtc());
         widget.setGuid(widgetInternal.getGuid());
 
         return widget;

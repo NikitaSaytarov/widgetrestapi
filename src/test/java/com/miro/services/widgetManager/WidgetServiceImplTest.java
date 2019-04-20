@@ -149,7 +149,7 @@ public class WidgetServiceImplTest  extends Suite
         }
 
         @Test
-        public void should_shift_z_index_in_collection_when_pass_existing_zIndex_parameter() {
+        public void should_shift_z_index_in_collection_when_pass_existing_zIndex_parameter() throws InterruptedException {
 
             //Arrange
             var validX = 1d;
@@ -181,6 +181,7 @@ public class WidgetServiceImplTest  extends Suite
             var updatedAt6 = widget6.getUpdatedAtUtc();
 
             //Act
+            Thread.sleep(5); //for datetime comparision
             var widgetDto  = sut.createWidget(validX,validY,validWidth,validHeight, zIndex);
 
             //Assert
@@ -505,31 +506,32 @@ public class WidgetServiceImplTest  extends Suite
 
             assertThatCode(() -> {
                 //Act
+                Thread.sleep(5); //for datetime comparision
                 sut.updateWidget(widget3.getGuid(),updatedWidgetLayoutInfo);
 
                 var widget1Dto = sut.getWidget(widget1.getGuid());
                 assertTrue("Error, zIndex wrong ", widget1Dto.getzIndex() == zIndex1);
-                assertTrue("Error", widget1Dto.getUpdatedAtUtc().isEqual(updatedAt1));
+                assertTrue("Error, updatedAt comparision false", widget1Dto.getUpdatedAtUtc().isEqual(updatedAt1));
 
                 var widget2Dto = sut.getWidget(widget2.getGuid());
                 assertTrue("Error, zIndex wrong ", widget2Dto.getzIndex() == zIndex2);
-                assertTrue("Error", widget2Dto.getUpdatedAtUtc().isEqual(updatedAt2));
+                assertTrue("Error, updatedAt comparision false", widget2Dto.getUpdatedAtUtc().isEqual(updatedAt2));
 
                 var widgetMainDto = sut.getWidget(widget3.getGuid());
                 assertTrue("Error, zIndex wrong ", widgetMainDto.getzIndex() == zIndex);
-                assertTrue("Error", widgetMainDto.getUpdatedAtUtc().isAfter(updatedAt3));
+                assertTrue("Error, updatedAt comparision false", widgetMainDto.getUpdatedAtUtc().isAfter(updatedAt3));
 
                 var widget4Dto = sut.getWidget(widget4.getGuid());
                 assertTrue("Error, zIndex wrong ", widget4Dto.getzIndex() == zIndex4  + 1);
-                assertTrue("Error", widget4Dto.getUpdatedAtUtc().isAfter(updatedAt4));
+                assertTrue("Error, updatedAt comparision false", widget4Dto.getUpdatedAtUtc().isAfter(updatedAt4));
 
                 var widget5Dto = sut.getWidget(widget5.getGuid());
                 assertTrue("Error, zIndex wrong ", widget5Dto.getzIndex() == zIndex5  + 1);
-                assertTrue("Error", widget5Dto.getUpdatedAtUtc().isAfter(updatedAt5));
+                assertTrue("Error, updatedAt comparision false", widget5Dto.getUpdatedAtUtc().isAfter(updatedAt5));
 
                 var widget6Dto = sut.getWidget(widget6.getGuid());
                 assertTrue("Error, zIndex wrong ", widget6Dto.getzIndex() == zIndex6  + 1);
-                assertTrue("Error", widget6Dto.getUpdatedAtUtc().isAfter(updatedAt6));
+                assertTrue("Error, updatedAt comparision false", widget6Dto.getUpdatedAtUtc().isAfter(updatedAt6));
             }).doesNotThrowAnyException();
         }
 
@@ -586,6 +588,7 @@ public class WidgetServiceImplTest  extends Suite
                 LocalDateTime updatedAtUtc = widget.getUpdatedAtUtc();
 
                 //Act
+                Thread.sleep(5); //for datetime comparision
                 sut.updateWidget(widget.getGuid(),updatedWidgetLayoutInfo1);
 
                 // Assert

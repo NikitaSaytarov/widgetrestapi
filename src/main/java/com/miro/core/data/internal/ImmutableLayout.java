@@ -2,6 +2,7 @@ package com.miro.core.data.internal;
 
 import org.apache.commons.lang3.Validate;
 
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 
@@ -22,8 +23,8 @@ public final class ImmutableLayout{
         return zIndex;
     }
 
-    private final OffsetDateTime updatedAtUtc;
-    public OffsetDateTime getUpdatedAtUtc() {
+    private final LocalDateTime updatedAtUtc;
+    public LocalDateTime getUpdatedAtUtc() {
         return updatedAtUtc;
     }
 
@@ -36,7 +37,7 @@ public final class ImmutableLayout{
         this.size = size;
         this.vertex = vertex;
         this.zIndex = zIndex;
-        updatedAtUtc = OffsetDateTime.now( ZoneOffset.UTC );
+        updatedAtUtc = LocalDateTime.now( ZoneOffset.UTC );
     }
 
     @Override
