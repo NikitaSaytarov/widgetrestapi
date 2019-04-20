@@ -28,7 +28,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @RunWith(WidgetControllerTest.class)
 @Suite.SuiteClasses({ WidgetControllerTest.CreateWidget.class,
         WidgetControllerTest.GetWidget.class,
-        WidgetControllerTest.UpdateWidget.class})
+        WidgetControllerTest.UpdateWidget.class,
+        WidgetControllerTest.GetWidget.class,
+        WidgetControllerTest.Pagination.class})
 public class WidgetControllerTest extends Suite {
 
     public WidgetControllerTest(Class<?> klass, RunnerBuilder builder) throws InitializationError {
@@ -241,5 +243,82 @@ public class WidgetControllerTest extends Suite {
         }
     }
 
+
+    @RunWith(SpringRunner.class)
+    @SpringBootTest
+    @AutoConfigureMockMvc
+    @Category(WidgetControllerTest.class)
+    public static class GetWidgets{
+
+        @Autowired
+        private MockMvc mockMvc;
+
+        @MockBean
+        private WidgetServiceImpl widgetService;
+
+        @Test
+        public void should_return_200_code_when_call_get_request(){
+
+            //Arrange
+            var widgetDtoStub = new WidgetDto();
+            widgetDtoStub.setGuid(UUID.randomUUID());
+            when(widgetService.getAllWidgets())
+                    .thenReturn(new WidgetDto[]{widgetDtoStub});
+
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(get("/api/v1/widgets/"))
+                        .andDo(print())
+                        .andExpect(status().isOk());
+            }).doesNotThrowAnyException();
+        }
+    }
+
+
+    @RunWith(SpringRunner.class)
+    @SpringBootTest
+    @AutoConfigureMockMvc
+    @Category(WidgetControllerTest.class)
+    public static class Pagination{
+
+        @Autowired
+        private MockMvc mockMvc;
+
+        @MockBean
+        private WidgetServiceImpl widgetService;
+
+        @Test
+        public void should_return_200_code_when_call_get_request(){
+
+            //Arrange
+            var widgetDtoStub = new WidgetDto();
+            widgetDtoStub.setGuid(UUID.randomUUID());
+            when(widgetService.getWidgets(Mockito.any(Integer.class),Mockito.any(Integer.class)))
+                    .thenReturn(new WidgetDto[]{widgetDtoStub});
+
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(get("/api/v1/widgets/limit"))
+                        .andDo(print())
+                        .andExpect(status().isOk());
+            }).doesNotThrowAnyException();
+        }
+
+        @Test
+        public void should_return_400_code_when_call_with_invalid_parameters(){
+
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(get("/api/v1/widgets/limit")
+                        .param("limit", "-1")
+                        .param("offset", "asdff"))
+                        .andDo(print())
+                        .andExpect(status().isBadRequest());
+            }).doesNotThrowAnyException();
+        }
+    }
 
 }
