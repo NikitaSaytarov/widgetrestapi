@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 
 @Service
-public final class WidgetServiceImpl implements WidgetService {
+public class WidgetServiceImpl implements WidgetService {
 
     private final ReadWriteLock locker = new ReentrantReadWriteLock();
     private final ConcurrentSkipListSet<WidgetInternal> widgets = new ConcurrentSkipListSet<>(WidgetInternal.SORT_COMPARATOR);
