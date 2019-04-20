@@ -1,5 +1,6 @@
 package com.miro.controllers;
 
+import com.miro.core.data.internal.WidgetLayoutInfo;
 import com.miro.core.dto.WidgetDto;
 import com.miro.core.exceptions.WidgetNotFoundException;
 import com.miro.services.widgetManager.WidgetServiceImpl;
@@ -18,7 +19,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import java.util.UUID;
 import static org.assertj.core.api.Java6Assertions.assertThatCode;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -26,7 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @RunWith(WidgetControllerTest.class)
 @Suite.SuiteClasses({ WidgetControllerTest.CreateWidget.class,
-        WidgetControllerTest.GetWidget.class})
+        WidgetControllerTest.GetWidget.class,
+        WidgetControllerTest.UpdateWidget.class})
 public class WidgetControllerTest extends Suite {
 
     public WidgetControllerTest(Class<?> klass, RunnerBuilder builder) throws InitializationError {
@@ -173,4 +175,71 @@ public class WidgetControllerTest extends Suite {
             }).doesNotThrowAnyException();
         }
     }
+
+    @RunWith(SpringRunner.class)
+    @SpringBootTest
+    @AutoConfigureMockMvc
+    @Category(WidgetControllerTest.class)
+    public static class UpdateWidget{
+
+        @Autowired
+        private MockMvc mockMvc;
+
+        @MockBean
+        private WidgetServiceImpl widgetService;
+
+        @Test
+        public void should_return_200_code_when_successful_update_widget(){
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(put("/api/v1/widgets/" + UUID.randomUUID())
+                        .param("x", "1")
+                        .param("y", "1")
+                        .param("width","1")
+                        .param("height", "1")
+                        .param("zIndex", "1"))
+                        .andDo(print())
+                        .andExpect(status().isOk());
+            }).doesNotThrowAnyException();
+        }
+
+        @Test
+        public void should_return_404_code_when_pass_guid_and_widget_not_exist() throws WidgetNotFoundException {
+
+            //Arrange
+            doThrow(new WidgetNotFoundException()).when(widgetService).updateWidget(Mockito.any(UUID.class), Mockito.any(WidgetLayoutInfo.class));
+
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(put("/api/v1/widgets/" + UUID.randomUUID())
+                        .param("x", "1")
+                        .param("y", "1")
+                        .param("width","1")
+                        .param("height", "1")
+                        .param("zIndex", "1"))
+                        .andDo(print())
+                        .andExpect(status().isNotFound());
+            }).doesNotThrowAnyException();
+        }
+
+        @Test
+        public void should_return_400_code_when_pass_invalid_parameters() throws WidgetNotFoundException {
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(put("/api/v1/widgets/" + UUID.randomUUID())
+                        .param("x", "-1")
+                        .param("y", "-1")
+                        .param("width","-1")
+                        .param("height", "-1")
+                        .param("zIndex", "-1"))
+                        .andDo(print())
+                        .andExpect(status().isBadRequest());
+            }).doesNotThrowAnyException();
+        }
+    }
+
+
 }
