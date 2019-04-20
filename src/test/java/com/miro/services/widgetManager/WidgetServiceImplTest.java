@@ -168,11 +168,17 @@ public class WidgetServiceImplTest  extends Suite
 
             var sut = new WidgetServiceImpl();
             var widget1 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex1);
+            var updatedAt1 = widget1.getUpdatedAtUtc();
             var widget2 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex2);
+            var updatedAt2 = widget2.getUpdatedAtUtc();
             var widget3 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex3);
+            var updatedAt3 = widget3.getUpdatedAtUtc();
             var widget4 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex4);
+            var updatedAt4 = widget4.getUpdatedAtUtc();
             var widget5 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex5);
+            var updatedAt5 = widget5.getUpdatedAtUtc();
             var widget6 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex6);
+            var updatedAt6 = widget6.getUpdatedAtUtc();
 
             //Act
             var widgetDto  = sut.createWidget(validX,validY,validWidth,validHeight, zIndex);
@@ -181,24 +187,30 @@ public class WidgetServiceImplTest  extends Suite
             assertThatCode(() -> {
                 var widget1Dto = sut.getWidget(widget1.getGuid());
                 assertTrue("Error, zIndex wrong ", widget1Dto.getzIndex() == zIndex1);
+                assertTrue("Error", widget1Dto.getUpdatedAtUtc().isEqual(updatedAt1));
 
                 var widget2Dto = sut.getWidget(widget2.getGuid());
                 assertTrue("Error, zIndex wrong ", widget2Dto.getzIndex() == zIndex2);
+                assertTrue("Error", widget2Dto.getUpdatedAtUtc().isEqual(updatedAt2));
 
                 var widgetMainDto = sut.getWidget(widgetDto.getGuid());
                 assertTrue("Error, zIndex wrong ", widgetMainDto.getzIndex() == zIndex);
 
                 var widget3Dto = sut.getWidget(widget3.getGuid());
                 assertTrue("Error, zIndex wrong ", widget3Dto.getzIndex() == zIndex3 + 1);
+                assertTrue("Error", widget3Dto.getUpdatedAtUtc().isAfter(updatedAt3));
 
                 var widget4Dto = sut.getWidget(widget4.getGuid());
                 assertTrue("Error, zIndex wrong ", widget4Dto.getzIndex() == zIndex4  + 1);
+                assertTrue("Error", widget4Dto.getUpdatedAtUtc().isAfter(updatedAt4));
 
                 var widget5Dto = sut.getWidget(widget5.getGuid());
                 assertTrue("Error, zIndex wrong ", widget5Dto.getzIndex() == zIndex5  + 1);
+                assertTrue("Error", widget5Dto.getUpdatedAtUtc().isAfter(updatedAt5));
 
                 var widget6Dto = sut.getWidget(widget6.getGuid());
                 assertTrue("Error, zIndex wrong ", widget6Dto.getzIndex() == zIndex6  + 1);
+                assertTrue("Error", widget6Dto.getUpdatedAtUtc().isAfter(updatedAt6));
             }).doesNotThrowAnyException();
         }
     }
@@ -472,11 +484,17 @@ public class WidgetServiceImplTest  extends Suite
 
             var sut = new WidgetServiceImpl();
             var widget1 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex1);
+            var updatedAt1 = widget1.getUpdatedAtUtc();
             var widget2 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex2);
+            var updatedAt2 = widget2.getUpdatedAtUtc();
             var widget3 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex3);
+            var updatedAt3 = widget3.getUpdatedAtUtc();
             var widget4 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex4);
+            var updatedAt4 = widget4.getUpdatedAtUtc();
             var widget5 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex5);
+            var updatedAt5 = widget5.getUpdatedAtUtc();
             var widget6 = sut.createWidget(validX,validY,validWidth,validHeight, zIndex6);
+            var updatedAt6 = widget6.getUpdatedAtUtc();
 
             var updatedWidgetLayoutInfo = new WidgetLayoutInfo();
             updatedWidgetLayoutInfo.setX(1);
@@ -490,28 +508,28 @@ public class WidgetServiceImplTest  extends Suite
                 sut.updateWidget(widget3.getGuid(),updatedWidgetLayoutInfo);
 
                 var widget1Dto = sut.getWidget(widget1.getGuid());
-                // Assert
                 assertTrue("Error, zIndex wrong ", widget1Dto.getzIndex() == zIndex1);
+                assertTrue("Error", widget1Dto.getUpdatedAtUtc().isEqual(updatedAt1));
 
                 var widget2Dto = sut.getWidget(widget2.getGuid());
-                // Assert
                 assertTrue("Error, zIndex wrong ", widget2Dto.getzIndex() == zIndex2);
+                assertTrue("Error", widget2Dto.getUpdatedAtUtc().isEqual(updatedAt2));
 
                 var widgetMainDto = sut.getWidget(widget3.getGuid());
-                // Assert
                 assertTrue("Error, zIndex wrong ", widgetMainDto.getzIndex() == zIndex);
+                assertTrue("Error", widgetMainDto.getUpdatedAtUtc().isAfter(updatedAt3));
 
                 var widget4Dto = sut.getWidget(widget4.getGuid());
-                // Assert
                 assertTrue("Error, zIndex wrong ", widget4Dto.getzIndex() == zIndex4  + 1);
+                assertTrue("Error", widget4Dto.getUpdatedAtUtc().isAfter(updatedAt4));
 
                 var widget5Dto = sut.getWidget(widget5.getGuid());
-                // Assert
                 assertTrue("Error, zIndex wrong ", widget5Dto.getzIndex() == zIndex5  + 1);
+                assertTrue("Error", widget5Dto.getUpdatedAtUtc().isAfter(updatedAt5));
 
                 var widget6Dto = sut.getWidget(widget6.getGuid());
-                // Assert
                 assertTrue("Error, zIndex wrong ", widget6Dto.getzIndex() == zIndex6  + 1);
+                assertTrue("Error", widget6Dto.getUpdatedAtUtc().isAfter(updatedAt6));
             }).doesNotThrowAnyException();
         }
 
