@@ -30,7 +30,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         WidgetControllerTest.GetWidget.class,
         WidgetControllerTest.UpdateWidget.class,
         WidgetControllerTest.GetWidget.class,
-        WidgetControllerTest.Pagination.class})
+        WidgetControllerTest.Pagination.class,
+        WidgetControllerTest.Filtration.class,
+        WidgetControllerTest.DeleteWidget.class})
 public class WidgetControllerTest extends Suite {
 
     public WidgetControllerTest(Class<?> klass, RunnerBuilder builder) throws InitializationError {
@@ -317,6 +319,112 @@ public class WidgetControllerTest extends Suite {
                         .param("offset", "asdff"))
                         .andDo(print())
                         .andExpect(status().isBadRequest());
+            }).doesNotThrowAnyException();
+        }
+    }
+
+    @RunWith(SpringRunner.class)
+    @SpringBootTest
+    @AutoConfigureMockMvc
+    @Category(WidgetControllerTest.class)
+    public static class Filtration{
+
+        @Autowired
+        private MockMvc mockMvc;
+
+        @MockBean
+        private WidgetServiceImpl widgetService;
+
+        @Test
+        public void should_return_200_code_when_call_request_with_valid_parameters(){
+
+            //Arrange
+            var widgetDtoStub = new WidgetDto();
+            widgetDtoStub.setGuid(UUID.randomUUID());
+            when(widgetService.filterAndGetWidgets(Mockito.any(Double.class),Mockito.any(Double.class),Mockito.any(Double.class),Mockito.any(Double.class)))
+                    .thenReturn(new WidgetDto[]{widgetDtoStub});
+
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(get("/api/v1/widgets/filter")
+                        .param("x1", "1")
+                        .param("y1", "1")
+                        .param("x2", "1")
+                        .param("y2", "1"))
+                        .andDo(print())
+                        .andExpect(status().isOk());
+            }).doesNotThrowAnyException();
+        }
+
+        @Test
+        public void should_return_400_code_when_call_with_invalid_parameters(){
+
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(get("/api/v1/widgets/filter")
+                        .param("x1", "-1")
+                        .param("y1", "1")
+                        .param("x2", "1")
+                        .param("y2", "1"))
+                        .andDo(print())
+                        .andExpect(status().isBadRequest());
+            }).doesNotThrowAnyException();
+        }
+    }
+
+    @RunWith(SpringRunner.class)
+    @SpringBootTest
+    @AutoConfigureMockMvc
+    @Category(WidgetControllerTest.class)
+    public static class DeleteWidget{
+
+        @Autowired
+        private MockMvc mockMvc;
+
+        @MockBean
+        private WidgetServiceImpl widgetService;
+
+        @Test
+        public void should_return_200_code_when_successful_delete_widget() throws WidgetNotFoundException {
+
+            //Arrange
+            doNothing().when(widgetService).removeWidget(Mockito.any(UUID.class));
+
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(delete("/api/v1/widgets/" + UUID.randomUUID().toString()))
+                        .andDo(print())
+                        .andExpect(status().isOk());
+            }).doesNotThrowAnyException();
+        }
+
+        @Test
+        public void should_return_400_code_when_call_with_invalid_parameters(){
+
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(delete("/api/v1/widgets/sdfsdfgsdfgsdfg"))
+                        .andDo(print())
+                        .andExpect(status().isBadRequest());
+            }).doesNotThrowAnyException();
+        }
+
+        @Test
+        public void should_return_404_code_when_widget_not_found() throws WidgetNotFoundException {
+
+            //Arrange
+            doThrow(new WidgetNotFoundException()).when(widgetService).removeWidget(Mockito.any(UUID.class));
+
+            assertThatCode(() -> {
+                //Act
+                //Assert
+                mockMvc.perform(delete("/api/v1/widgets/" + UUID.randomUUID().toString()))
+                        .andDo(print())
+                        .andExpect(status().isOk()); //DELETE is idempotent
             }).doesNotThrowAnyException();
         }
     }
